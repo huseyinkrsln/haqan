@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Inter, Playfair_Display, Geist } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
 import AnnouncementBar from "@/components/layout/AnnouncementBar";
 import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 const inter = Inter({
   subsets: ["latin"],
@@ -35,13 +39,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="tr" className={`${inter.variable} ${playfair.variable}`}>
+    <html lang="tr" className={cn(inter.variable, playfair.variable, "font-sans", geist.variable)}>
       <body className="min-h-screen bg-[#F9F9FB] font-sans antialiased">
         <CartProvider>
           <WishlistProvider>
             <AnnouncementBar />
             <Header />
             <main className="pb-20 md:pb-0">{children}</main>
+            <Footer />
             <MobileBottomNav />
           </WishlistProvider>
         </CartProvider>
