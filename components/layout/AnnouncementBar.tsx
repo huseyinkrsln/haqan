@@ -1,11 +1,11 @@
 "use client";
 
-import { Truck, Tag, Zap } from "lucide-react";
+import { Truck, Zap, RotateCcw } from "lucide-react";
 
 const items = [
   { icon: Truck, text: "ÜCRETSİZ KARGO", sub: "999 TL ve üzeri siparişlerde geçerli" },
-  { icon: Tag, text: "İLK ÜYELİĞE ÖZEL %10 İNDİRİM", sub: "KOD: HAQAN10" },
   { icon: Zap, text: "HIZLI TESLİMAT", sub: "1-3 iş günü içinde kapıda" },
+  { icon: RotateCcw, text: "KOLAY İADE", sub: "14 gün içinde ücretsiz değişim" },
 ];
 
 export default function AnnouncementBar() {
@@ -22,10 +22,10 @@ export default function AnnouncementBar() {
           </div>
         ))}
       </div>
-      {/* Mobile: show only first item */}
+      {/* Mobile: show single clean top bar */}
       <div className="md:hidden flex items-center justify-center gap-2 py-2 px-4 text-center">
         <Truck size={12} className="shrink-0" />
-        <span className="font-medium">ÜCRETSİZ KARGO — 999 TL ve üzeri siparişlerde</span>
+        <span className="font-medium text-[11px]">ÜCRETSİZ KARGO — 999 TL ve üzeri siparişlerde</span>
       </div>
     </div>
   );

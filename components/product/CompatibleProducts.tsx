@@ -4,7 +4,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { Heart } from "lucide-react";
 import { useState } from "react";
-import { CompatibleProduct, formatPrice } from "@/lib/data";
+import { formatPrice, getMinioUrl } from "@/lib/utils";
+
+export interface CompatibleProduct {
+  id: string | number;
+  slug: string;
+  name: string;
+  price: number;
+  image: string;
+}
 
 interface CompatibleProductsProps {
   products: CompatibleProduct[];
@@ -44,14 +52,18 @@ export default function CompatibleProducts({ products }: CompatibleProductsProps
             href={`/urun/${product.slug}`}
             className="group shrink-0 w-28"
           >
-            <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-50 border border-gray-100">
-              <Image
-                src={product.image}
-                alt={product.name}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-300"
-                sizes="112px"
-              />
+            <div className="relative aspect-square rounded-xl overflow-hidden bg-slate-900 border border-gray-100 flex items-center justify-center">
+              {product.image ? (
+                <Image
+                  src={getMinioUrl(product.image)}
+                  alt={product.name}
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  sizes="112px"
+                />
+              ) : (
+                <span className="font-serif text-xs font-bold text-white/40">HQ</span>
+              )}
               <WishlistButton />
             </div>
             <p className="text-[11px] font-medium text-gray-800 mt-1.5 truncate">

@@ -2,132 +2,143 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { ZoomIn, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Shirt, Maximize2 } from "lucide-react";
+import { getMinioUrl } from "@/lib/utils";
 
 interface ProductImageGalleryProps {
-  images: string[];
+  images?: (string | { imageUrl: string })[];
   productName: string;
 }
 
 export default function ProductImageGallery({
-  images,
+  images = [],
   productName,
 }: ProductImageGalleryProps) {
   const [selected, setSelected] = useState(0);
 
-  const prev = () => setSelected((s) => (s === 0 ? images.length - 1 : s - 1));
-  const next = () => setSelected((s) => (s === images.length - 1 ? 0 : s + 1));
+  const validImages = images
+    .map((img) => getMinioUrl(typeof img === "string" ? img : img?.imageUrl))
+    .filter((url) => Boolean(url && url.trim().length > 0));
+
+  const hasImages = validImages.length > 0;
+  const safeIndex = Math.min(selected, Math.max(0, validImages.length - 1));
+
+  const prev = () => setSelected((s) => (s === 0 ? validImages.length - 1 : s - 1));
+  const next = () => setSelected((s) => (s === validImages.length - 1 ? 0 : s + 1));
+
+  if (!hasImages) {
+    return (
+      <div className="w-full aspect-[3/4] rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 flex flex-col items-center justify-center text-white/30 border border-gray-100 shadow-2xs">
+        <Shirt size={64} className="mb-3 text-[#4A5D3E]/80 animate-pulse" />
+        <span className="font-serif text-2xl font-bold tracking-widest text-white/60">HAQAN</span>
+        <span className="text-xs uppercase tracking-widest font-medium mt-1 text-white/40">Görsel Eklenmedi</span>
+      </div>
+    );
+  }
 
   return (
     <>
-      {/* Desktop: vertical thumbnails + main image */}
+      {/* Desktop: dikey küçük resimler + dikey 3:4 ana görsel */}
       <div className="hidden md:flex gap-3 sticky top-20">
         {/* Thumbnails */}
-        <div className="flex flex-col gap-2 w-20 shrink-0">
-          {images.map((img, i) => (
-            <button
-              key={i}
-              onClick={() => setSelected(i)}
-              className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
-                i === selected
-                  ? "border-[#4A5D3E]"
-                  : "border-transparent hover:border-gray-300"
-              }`}
-            >
-              <Image
-                src={img}
-                alt={`${productName} - ${i + 1}`}
-                fill
-                className="object-cover"
-                sizes="80px"
-              />
-            </button>
-          ))}
-        </div>
+        {validImages.length > 1 && (
+          <div className="flex flex-col gap-2 w-20 shrink-0 max-h-[600px] overflow-y-auto scrollbar-hide">
+            {validImages.map((img, i) => (
+              <button
+                key={i}
+                onClick={() => setSelected(i)}
+                className={`relative aspect-[3/4] rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
+                  i === safeIndex
+                    ? "border-[#4A5D3E] shadow-xs"
+                    : "border-gray-200 hover:border-gray-400 opacity-70 hover:opacity-100"
+                }`}
+              >
+                <Image
+                  src={img}
+                  alt={`${productName} - ${i + 1}`}
+                  fill
+                  className="object-cover"
+                  sizes="80px"
+                />
+              </button>
+            ))}
+          </div>
+        )}
 
-        {/* Main Image */}
-        <div className="flex-1 relative rounded-2xl overflow-hidden bg-gray-50 aspect-[4/5] group">
+        {/* Main Image (Kart ile Birebir 3:4 Dikey Moda Oranı) */}
+        <div className="flex-1 relative rounded-2xl overflow-hidden bg-gray-50 aspect-[3/4] group border border-gray-100 shadow-2xs">
           <Image
-            src={images[selected]}
+            src={validImages[safeIndex]}
             alt={productName}
             fill
-            className="object-cover"
+            className="object-cover group-hover:scale-105 transition-transform duration-500"
             sizes="(max-width: 1280px) 50vw, 600px"
             priority
           />
-          <button className="absolute top-3 right-3 bg-white/80 backdrop-blur-sm rounded-lg p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <ZoomIn size={16} className="text-gray-700" />
-          </button>
         </div>
       </div>
 
-      {/* Mobile: full-width + horizontal thumbnails + dots */}
+      {/* Mobile: 3:4 dikey ana görsel + yatay küçük resimler */}
       <div className="md:hidden">
-        {/* Main image */}
-        <div className="relative aspect-square bg-gray-50 overflow-hidden rounded-xl">
+        {/* Main image (3:4 Oranı Sayesinde Mankenin Başı/Ayakları Asla Kesilmez) */}
+        <div className="relative aspect-[3/4] bg-gray-50 overflow-hidden rounded-2xl border border-gray-100 shadow-2xs">
           <Image
-            src={images[selected]}
+            src={validImages[safeIndex]}
             alt={productName}
             fill
             className="object-cover"
             sizes="100vw"
             priority
           />
-          <button
-            onClick={prev}
-            className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-1.5"
-            aria-label="Önceki"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <button
-            onClick={next}
-            className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-1.5"
-            aria-label="Sonraki"
-          >
-            <ChevronRight size={16} />
-          </button>
-          <button className="absolute top-3 right-3 bg-white/80 backdrop-blur-sm rounded-lg p-1.5">
-            <ZoomIn size={14} className="text-gray-700" />
-          </button>
+          {validImages.length > 1 && (
+            <>
+              <button
+                onClick={prev}
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 bg-white/85 backdrop-blur-xs rounded-full p-2 shadow-sm text-gray-800"
+                aria-label="Önceki"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <button
+                onClick={next}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 bg-white/85 backdrop-blur-xs rounded-full p-2 shadow-sm text-gray-800"
+                aria-label="Sonraki"
+              >
+                <ChevronRight size={18} />
+              </button>
+
+              {/* Sayfa Göstergesi (1/3) */}
+              <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-xs text-white text-[10px] font-semibold px-2.5 py-1 rounded-full">
+                {safeIndex + 1} / {validImages.length}
+              </div>
+            </>
+          )}
         </div>
 
         {/* Thumbnails strip */}
-        <div className="flex gap-2 mt-2 overflow-x-auto scrollbar-hide pb-1">
-          {images.map((img, i) => (
-            <button
-              key={i}
-              onClick={() => setSelected(i)}
-              className={`relative w-16 h-16 shrink-0 rounded-lg overflow-hidden border-2 transition-all ${
-                i === selected
-                  ? "border-[#4A5D3E]"
-                  : "border-transparent opacity-60"
-              }`}
-            >
-              <Image
-                src={img}
-                alt={`${productName} - ${i + 1}`}
-                fill
-                className="object-cover"
-                sizes="64px"
-              />
-            </button>
-          ))}
-        </div>
-
-        {/* Dots indicator */}
-        <div className="flex justify-center gap-1.5 mt-2">
-          {images.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setSelected(i)}
-              className={`w-1.5 h-1.5 rounded-full transition-all ${
-                i === selected ? "bg-[#4A5D3E] w-4" : "bg-gray-300"
-              }`}
-              aria-label={`Resim ${i + 1}`}
-            />
-          ))}
-        </div>
+        {validImages.length > 1 && (
+          <div className="flex gap-2 mt-3 overflow-x-auto scrollbar-hide pb-1">
+            {validImages.map((img, i) => (
+              <button
+                key={i}
+                onClick={() => setSelected(i)}
+                className={`relative w-14 aspect-[3/4] shrink-0 rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
+                  i === safeIndex
+                    ? "border-[#4A5D3E] shadow-xs"
+                    : "border-gray-200 opacity-60"
+                }`}
+              >
+                <Image
+                  src={img}
+                  alt={`${productName} - ${i + 1}`}
+                  fill
+                  className="object-cover"
+                  sizes="56px"
+                />
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </>
   );

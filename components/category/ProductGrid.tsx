@@ -1,15 +1,27 @@
 import ProductCard from "@/components/product/ProductCard";
-import { Product } from "@/lib/data";
+import { Product } from "@/types/api.types";
 
 interface ProductGridProps {
   products: Product[];
+  isLoading?: boolean;
 }
 
-export default function ProductGrid({ products }: ProductGridProps) {
-  if (!products.length) {
+export default function ProductGrid({ products, isLoading }: ProductGridProps) {
+  if (isLoading) {
     return (
-      <div className="text-center py-16 text-gray-400">
-        <p className="text-lg font-medium">Bu kategoride ürün bulunamadı.</p>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+          <div key={n} className="rounded-xl aspect-[3/4] bg-gray-100 animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+
+  if (!products || !products.length) {
+    return (
+      <div className="text-center py-20 bg-white border border-gray-100 rounded-2xl p-8">
+        <p className="text-base font-semibold text-gray-800">Bu kriterlere uygun ürün bulunamadı.</p>
+        <p className="text-xs text-gray-400 mt-1">Filtreleri temizleyerek tekrar deneyebilirsiniz.</p>
       </div>
     );
   }
@@ -19,12 +31,6 @@ export default function ProductGrid({ products }: ProductGridProps) {
       {products.map((product) => (
         <ProductCard
           key={product.id}
-          id={product.id}
-          slug={product.slug}
-          name={product.name}
-          price={product.price}
-          oldPrice={product.oldPrice}
-          image={product.images[0]}
           product={product}
         />
       ))}

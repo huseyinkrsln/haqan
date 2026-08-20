@@ -1,13 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { Heart, ArrowUpDown, ArrowRight, Truck, Clock, RotateCcw, Shield, Headphones } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { Heart, ArrowUpDown, ArrowRight, Truck, Clock, RotateCcw, Shield, Headphones, Check } from "lucide-react";
 import { useWishlist } from "@/context/WishlistContext";
 import FavoriteProductCard from "@/components/product/FavoriteProductCard";
-import { useState } from "react";
-import { products } from "@/lib/data";
+import AuthRequiredView from "@/components/auth/AuthRequiredView";
 
-const sortOptions = ["En Yeni", "Fiyat (Artan)", "Fiyat (Azalan)", "En Popüler"];
+const sortOptions = [
+  { label: "En Yeni", value: "en-yeni" },
+  { label: "Fiyat (Artan)", value: "fiyat-artan" },
+  { label: "Fiyat (Azalan)", value: "fiyat-azalan" },
+  { label: "İsim (A-Z)", value: "isim-a-z" },
+  { label: "İsim (Z-A)", value: "isim-z-a" },
+];
 
 const trustItems = [
   { icon: Truck, label: "ÜCRETSİZ KARGO", sub: "999 TL ve üzeri" },
@@ -17,20 +25,91 @@ const trustItems = [
   { icon: Headphones, label: "7/24 DESTEK", sub: "Her zaman yanınızda" },
 ];
 
-// Pre-seed demo favorites from mock data so the page looks populated on first visit
-const DEMO_BADGES: Record<string, string> = {
-  p1: "PREMIUM",
-  p8: "YENİ",
-};
-
 export default function FavorilerPage() {
+  const { data: session, status } = useSession();
   const { items, totalItems } = useWishlist();
-  const [sortOpen, setSortOpen] = useState(false);
-  const [activeSort, setActiveSort] = useState("En Yeni");
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-  // If the wishlist is empty in context, show demo items as display-only
-  const displayItems = totalItems > 0 ? items : [];
-  const hasItems = displayItems.length > 0;
+  const urlSort = searchParams.get("sort") || "en-yeni";
+  const [activeSort, setActiveSort] = useState(urlSort);
+  const [sortOpen, setSortOpen] = useState(false);
+
+  useEffect(() => {
+    if (urlSort && urlSort !== activeSort) {
+      setActiveSort(urlSort);
+    }
+  }, [urlSort]);
+
+  const handleSortChange = (value: string) => {
+    setActiveSort(value);
+    setSortOpen(false);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("sort", value);
+    router.replace(`/favoriler?${params.toString()}`, { scroll: false });
+  };
+
+  // 🌟 GÜVENLİ & ANLIK SIRALAMA HESAPLAMASI 🌟
+  const sortedItems = useMemo(() => {
+    if (!items || items.length === 0) return [];
+    const list = [...items];
+
+    switch (activeSort) {
+      case "fiyat-artan":
+        return list.sort((a, b) => {
+          const priceA = a.discountPrice && a.discountPrice > 0 ? a.discountPrice : a.basePrice;
+          const priceB = b.discountPrice && b.discountPrice > 0 ? b.discountPrice : b.basePrice;
+          return Number(priceA) - Number(priceB);
+        });
+
+      case "fiyat-azalan":
+        return list.sort((a, b) => {
+          const priceA = a.discountPrice && a.discountPrice > 0 ? a.discountPrice : a.basePrice;
+          const priceB = b.discountPrice && b.discountPrice > 0 ? b.discountPrice : b.basePrice;
+          return Number(priceB) - Number(priceA);
+        });
+
+      case "isim-a-z":
+        return list.sort((a, b) => (a.name || "").localeCompare(b.name || "", "tr"));
+
+      case "isim-z-a":
+        return list.sort((a, b) => (b.name || "").localeCompare(a.name || "", "tr"));
+
+      case "en-yeni":
+      default:
+        return list.sort((a, b) => Number(b.id || 0) - Number(a.id || 0));
+    }
+  }, [items, activeSort]);
+
+  // Yükleme Durumu
+  if (status === "loading") {
+    return (
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-12 animate-pulse space-y-6">
+        <div className="h-6 w-32 bg-gray-200 rounded" />
+        <div className="h-10 w-48 bg-gray-200 rounded" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6">
+          {[1, 2, 3, 4].map((n) => (
+            <div key={n} className="aspect-[3/4] bg-gray-200 rounded-3xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // 🌟 GİRİŞ YAPILMAMIŞSA KORUMA EKRANI 🌟
+  if (status === "unauthenticated" || !session?.user) {
+    return (
+      <AuthRequiredView
+        title="Favorilerinizi Görüntülemek İçin Giriş Yapın"
+        description="Beğendiğiniz seçkin tasarımları favori listenize eklemek, saklamak ve özel indirim fırsatlarından haberdar olmak için lütfen giriş yapınız."
+        callbackUrl="/favoriler"
+        iconType="heart"
+      />
+    );
+  }
+
+  const hasItems = sortedItems.length > 0;
+  const currentSortLabel = sortOptions.find((o) => o.value === activeSort)?.label || "En Yeni";
 
   return (
     <>
@@ -38,51 +117,52 @@ export default function FavorilerPage() {
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-xs text-gray-400 mb-6">
           <Link href="/" className="hover:text-gray-700">Ana Sayfa</Link>
-          <span>›</span>
-          <span className="text-gray-700 font-medium">Favoriler</span>
+          <span>/</span>
+          <span className="text-gray-700 font-medium">Favorilerim</span>
         </nav>
 
-        {/* Page title */}
+        {/* Başlık */}
         <div className="mb-8">
           <h1 className="font-serif text-3xl md:text-4xl font-bold text-gray-900 uppercase tracking-wide">
-            FAVORİLER
+            FAVORİLERİM
           </h1>
           <p className="text-gray-500 mt-1.5 text-sm">
-            Beğendiğin parçaları burada sakla.
+            Beğendiğiniz seçkin parçaları burada saklayabilir ve tek tıkla sepete ekleyebilirsiniz.
           </p>
         </div>
 
         {hasItems ? (
           <>
             {/* Toolbar */}
-            <div className="flex items-center justify-between mb-6">
-              <span className="text-sm font-semibold text-gray-700">
-                {totalItems} ÜRÜN
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-100">
+              <span className="text-sm font-bold text-gray-800 tracking-tight">
+                {totalItems} FAVORİ ÜRÜN
               </span>
+
+              {/* 🌟 SIRALAMA MENÜSÜ 🌟 */}
               <div className="relative">
                 <button
                   onClick={() => setSortOpen(!sortOpen)}
-                  className="flex items-center gap-2 text-xs font-medium text-gray-600 border border-gray-200 px-3 py-2 rounded-lg hover:border-gray-300 transition-colors"
+                  className="flex items-center gap-2 text-xs font-semibold text-gray-700 bg-white border border-gray-200/80 px-3.5 py-2.5 rounded-xl hover:border-gray-400 shadow-2xs transition-colors cursor-pointer"
                 >
-                  <ArrowUpDown size={13} />
-                  SIRALA: {activeSort}
+                  <ArrowUpDown size={13} className="text-[#4A5D3E]" />
+                  <span>SIRALA: <strong className="text-gray-900">{currentSortLabel}</strong></span>
                 </button>
+
                 {sortOpen && (
-                  <div className="absolute right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-lg py-2 z-10 w-44">
+                  <div className="absolute right-0 top-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-20 w-48 animate-in fade-in zoom-in-95 duration-150">
                     {sortOptions.map((opt) => (
                       <button
-                        key={opt}
-                        className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
-                          activeSort === opt
-                            ? "text-[#4A5D3E] font-semibold bg-[#4A5D3E]/5"
+                        key={opt.value}
+                        className={`w-full flex items-center justify-between px-4 py-2.5 text-xs transition-colors cursor-pointer ${
+                          activeSort === opt.value
+                            ? "text-[#4A5D3E] font-bold bg-[#4A5D3E]/10"
                             : "text-gray-700 hover:bg-gray-50 hover:text-[#4A5D3E]"
                         }`}
-                        onClick={() => {
-                          setActiveSort(opt);
-                          setSortOpen(false);
-                        }}
+                        onClick={() => handleSortChange(opt.value)}
                       >
-                        {opt}
+                        <span>{opt.label}</span>
+                        {activeSort === opt.value && <Check size={14} />}
                       </button>
                     ))}
                   </div>
@@ -90,36 +170,35 @@ export default function FavorilerPage() {
               </div>
             </div>
 
-            {/* Main layout — grid + sidebar */}
+            {/* Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
               {/* Product grid */}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {displayItems.map((product) => (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+                {sortedItems.map((product) => (
                   <FavoriteProductCard
                     key={product.id}
                     product={product}
-                    badge={DEMO_BADGES[product.id]}
                   />
                 ))}
               </div>
 
-              {/* Sidebar — discover panel */}
+              {/* Sidebar */}
               <div className="hidden lg:flex flex-col">
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-card p-8 flex flex-col items-center text-center gap-5 sticky top-24">
+                <div className="bg-white rounded-3xl border border-gray-200/70 shadow-card p-8 flex flex-col items-center text-center gap-5 sticky top-24">
                   <div className="w-16 h-16 rounded-full bg-[#4A5D3E]/10 flex items-center justify-center">
                     <Heart size={28} className="text-[#4A5D3E]" strokeWidth={1.5} />
                   </div>
                   <div>
                     <h3 className="font-serif text-lg font-bold text-gray-900 leading-tight">
-                      Daha fazla ürün keşfet
+                      Koleksiyonu Keşfet
                     </h3>
                     <p className="text-xs text-gray-500 mt-2 leading-relaxed">
-                      Koleksiyonumuzu keşfedin ve beğendiklerinizi favorilere ekleyin.
+                      HAQAN'ın yeni sezon erkek ve kadın parçalarını keşfedip favorilerinize ekleyin.
                     </p>
                   </div>
                   <Link
-                    href="/kategoriler"
-                    className="w-full flex items-center justify-center gap-2 bg-[#4A5D3E] hover:bg-[#3A4B30] text-white font-semibold py-3 rounded-xl transition-colors text-sm"
+                    href="/koleksiyon/erkek-giyim"
+                    className="w-full flex items-center justify-center gap-2 bg-[#4A5D3E] hover:bg-[#3A4B30] text-white font-bold py-3 rounded-xl transition-colors text-xs shadow-md uppercase tracking-wider"
                   >
                     ÜRÜNLERİ KEŞFET <ArrowRight size={14} />
                   </Link>
@@ -128,9 +207,8 @@ export default function FavorilerPage() {
             </div>
           </>
         ) : (
-          /* Empty state — clean centered layout */
+          /* Empty state */
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            {/* Animated heart icon */}
             <div className="relative mb-8">
               <div className="w-28 h-28 rounded-full bg-[#4A5D3E]/8 flex items-center justify-center">
                 <div className="w-20 h-20 rounded-full bg-[#4A5D3E]/12 flex items-center justify-center">
@@ -146,43 +224,21 @@ export default function FavorilerPage() {
             <h2 className="font-serif text-2xl md:text-3xl font-bold text-gray-900 mb-3">
               Henüz favori ürününüz yok.
             </h2>
-            <p className="text-gray-500 text-sm md:text-base max-w-sm leading-relaxed mb-10">
-              Beğendiğiniz ürünlerin kalbine dokunun, burada saklayın.
-              İstediğiniz zaman kolayca ulaşın.
+            <p className="text-gray-500 text-sm md:text-base max-w-sm leading-relaxed mb-8">
+              Beğendiğiniz ürünlerin kalbine dokunun, burada saklayın. İstediğiniz zaman kolayca sipariş verin.
             </p>
 
-            {/* Category suggestion cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full max-w-2xl mb-10">
-              {[
-                { label: "Gömlekler", href: "/kategoriler/giyim", emoji: "👔" },
-                { label: "Saatler", href: "/kategoriler/saat", emoji: "⌚" },
-                { label: "Ayakkabılar", href: "/kategoriler/ayakkabi", emoji: "👟" },
-                { label: "Aksesuarlar", href: "/kategoriler/aksesuar", emoji: "🕶️" },
-              ].map((cat) => (
-                <Link
-                  key={cat.href}
-                  href={cat.href}
-                  className="flex flex-col items-center gap-2 p-4 bg-white rounded-xl border border-gray-100 shadow-card hover:shadow-card-hover hover:border-[#4A5D3E]/30 transition-all group"
-                >
-                  <span className="text-2xl">{cat.emoji}</span>
-                  <span className="text-xs font-semibold text-gray-700 group-hover:text-[#4A5D3E] transition-colors">
-                    {cat.label}
-                  </span>
-                </Link>
-              ))}
-            </div>
-
             <Link
-              href="/kategoriler"
-              className="flex items-center gap-2 bg-[#4A5D3E] hover:bg-[#3A4B30] text-white font-semibold px-8 py-3.5 rounded-xl transition-colors text-sm tracking-wider"
+              href="/koleksiyon/erkek-giyim"
+              className="flex items-center gap-2 bg-[#4A5D3E] hover:bg-[#3A4B30] text-white font-bold px-8 py-3.5 rounded-xl transition-colors text-xs tracking-widest shadow-md uppercase"
             >
-              ÜRÜNLERİ KEŞFET <ArrowRight size={16} />
+              KOLEKSİYONLARI KEŞFET <ArrowRight size={16} />
             </Link>
           </div>
         )}
       </div>
 
-      {/* Trust badges */}
+      {/* Güven Rozetleri */}
       <section className="border-t border-gray-100 bg-white mt-12">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-6">

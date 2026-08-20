@@ -1,14 +1,26 @@
-import type { Metadata } from "next";
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Truck, Clock, RotateCcw, Shield, Headphones } from "lucide-react";
-import { categories, products } from "@/lib/data";
+import {
+  ArrowRight,
+  Truck,
+  Clock,
+  RotateCcw,
+  Shield,
+  Headphones,
+  Shirt,
+} from "lucide-react";
 import ProductCard from "@/components/product/ProductCard";
-
-export const metadata: Metadata = {
-  title: "HAQAN WEAR — Premium Erkek Giyim",
-  description: "Zamansız tasarımlar ve premium kumaşlarla erkek giyiminde yeni standartlar.",
-};
+import HeroSlider from "@/components/home/HeroSlider";
+import { useCategories } from "@/hooks/useCategories";
+import {
+  useProducts,
+  useBestSellerProducts,
+  useFeaturedProducts,
+  useNewArrivalProducts,
+} from "@/hooks/useProducts";
+import { getMinioUrl } from "@/lib/utils";
 
 const trustItems = [
   { icon: Truck, label: "ÜCRETSİZ KARGO", sub: "999 TL ve üzeri" },
@@ -19,123 +31,150 @@ const trustItems = [
 ];
 
 export default function HomePage() {
-  const featuredProducts = products.slice(0, 4);
+  const { data: rootCategoriesData, isLoading: isCategoriesLoading } = useCategories(true);
+  const { data: allCategoriesData } = useCategories(false);
+
+  // Veritabanı sorguları
+  const { data: bestSellersData, isLoading: isBestSellersLoading } = useBestSellerProducts(4);
+  const { data: featuredData, isLoading: isFeaturedLoading } = useFeaturedProducts(4);
+  const { data: newArrivalsData, isLoading: isNewArrivalsLoading } = useNewArrivalProducts(4);
+  const { data: allProductsData } = useProducts({ take: 8 });
+
+  const categories =
+    rootCategoriesData && rootCategoriesData.length > 0
+      ? rootCategoriesData
+      : allCategoriesData || [];
+
+  const allProducts = allProductsData?.data || [];
+
+  // Çok Satanlar
+  const bestSellers =
+    (bestSellersData?.data && bestSellersData.data.length > 0)
+      ? bestSellersData.data
+      : allProducts.filter((p) => p.isBestSeller);
+
+  // Öne Çıkanlar
+  const featuredProducts =
+    (featuredData?.data && featuredData.data.length > 0)
+      ? featuredData.data
+      : allProducts.filter((p) => p.isFeatured).length > 0
+      ? allProducts.filter((p) => p.isFeatured)
+      : allProducts;
+
+  // Yeni Gelenler
+  const newArrivals =
+    (newArrivalsData?.data && newArrivalsData.data.length > 0)
+      ? newArrivalsData.data
+      : allProducts.filter((p) => p.isNewArrival);
 
   return (
     <>
-      {/* Hero Section */}
-      <section className="relative h-[60vh] md:h-[75vh] overflow-hidden bg-gray-900">
-        <Image
-          src="https://images.unsplash.com/photo-1617137968427-85924c800a22?w=1600&q=85"
-          alt="HAQAN WEAR Hero"
-          fill
-          className="object-cover opacity-70"
-          priority
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
-        <div className="relative h-full flex items-center">
-          <div className="max-w-7xl mx-auto px-6 md:px-8">
-            <div className="max-w-xl animate-fade-in">
-              <span className="text-[#a3b899] text-xs tracking-[0.4em] font-medium uppercase mb-4 block">
-                Yeni Koleksiyon
-              </span>
-              <h1 className="font-serif text-4xl md:text-6xl font-bold text-white leading-tight mb-4">
-                Stilini Yeniden<br />Tanımla
-              </h1>
-              <p className="text-white/70 text-sm md:text-base mb-8 leading-relaxed">
-                Zamansız tasarımlar ve premium kumaşlarla her anın en iyisi için.
-              </p>
-              <div className="flex gap-4 flex-wrap">
-                <Link
-                  href="/kategoriler"
-                  className="flex items-center gap-2 bg-[#4A5D3E] hover:bg-[#3A4B30] text-white font-semibold px-6 py-3 rounded-xl transition-colors text-sm tracking-wider"
-                >
-                  Koleksiyonu Keşfet <ArrowRight size={16} />
-                </Link>
-                <Link
-                  href="/kategoriler/giyim"
-                  className="flex items-center gap-2 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white font-medium px-6 py-3 rounded-xl transition-colors text-sm border border-white/20"
-                >
-                  Giyim
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Dinamik Hero Slider */}
+      <HeroSlider />
 
-      {/* Categories Grid */}
-      <section className="max-w-7xl mx-auto px-4 md:px-8 py-12 md:py-16">
-        <div className="flex items-end justify-between mb-8">
-          <div>
-            <h2 className="font-serif text-2xl md:text-3xl font-bold text-gray-900">
-              Kategoriler
+      {/* ─── 1. ÇOK SATANLAR ─── */}
+      <section className="bg-gradient-to-b from-gray-50/60 to-white py-10 md:py-14 border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 md:px-8">
+          <div className="flex items-center justify-between mb-6 pb-2 border-b border-gray-100">
+            <h2 className="font-serif text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">
+              Çok Satanlar
             </h2>
-            <p className="text-gray-500 text-sm mt-1">Tarzınızı yansıtan kategorileri keşfedin.</p>
-          </div>
-          <Link
-            href="/kategoriler"
-            className="text-sm font-medium text-[#4A5D3E] hover:underline flex items-center gap-1"
-          >
-            Tümü <ArrowRight size={14} />
-          </Link>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {categories.map((cat) => (
             <Link
-              key={cat.slug}
-              href={`/kategoriler/${cat.slug}`}
-              className="group relative rounded-2xl overflow-hidden aspect-[3/4] block"
+              href="/koleksiyon/cok-satanlar"
+              className="text-xs sm:text-sm font-semibold text-gray-700 hover:text-[#4A5D3E] flex items-center gap-1 transition-colors"
             >
-              <Image
-                src={cat.image}
-                alt={cat.name}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-500"
-                sizes="(max-width: 768px) 50vw, 20vw"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-4">
-                <h3 className="font-serif text-lg font-bold text-white">{cat.name}</h3>
-                <p className="text-white/70 text-xs mt-0.5 line-clamp-2">{cat.description}</p>
-              </div>
+              <span>Tümünü Gör</span> <ArrowRight size={14} />
             </Link>
-          ))}
+          </div>
+
+          {isBestSellersLoading ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[1, 2, 3, 4].map((n) => (
+                <div key={n} className="rounded-xl aspect-[3/4] bg-gray-200 animate-pulse" />
+              ))}
+            </div>
+          ) : bestSellers.length === 0 ? (
+            <div className="text-center py-12 border border-dashed rounded-xl bg-white text-muted-foreground text-sm">
+              Henüz çok satan ürün listelenmedi.
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {bestSellers.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  badge="Çok Satan"
+                />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
-      {/* Featured Products */}
-      <section className="max-w-7xl mx-auto px-4 md:px-8 pb-12 md:pb-16">
-        <div className="flex items-end justify-between mb-8">
-          <div>
-            <h2 className="font-serif text-2xl md:text-3xl font-bold text-gray-900">
-              Öne Çıkan Ürünler
-            </h2>
-            <p className="text-gray-500 text-sm mt-1">En çok tercih edilen parçalar.</p>
-          </div>
+      {/* ─── 3. ÖNE ÇIKANLAR VİTRİNİ ─── */}
+      <section className="max-w-7xl mx-auto px-4 md:px-8 py-10 md:py-14">
+        <div className="flex items-center justify-between mb-6 pb-2 border-b border-gray-100">
+          <h2 className="font-serif text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">
+            Öne Çıkanlar
+          </h2>
           <Link
-            href="/kategoriler/giyim"
-            className="text-sm font-medium text-[#4A5D3E] hover:underline flex items-center gap-1"
+            href="/koleksiyon/one-cikanlar"
+            className="text-xs sm:text-sm font-semibold text-gray-700 hover:text-[#4A5D3E] flex items-center gap-1 transition-colors"
           >
-            Tümü <ArrowRight size={14} />
+            <span>Tümünü Gör</span> <ArrowRight size={14} />
           </Link>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {featuredProducts.map((product) => (
-            <ProductCard
-              key={product.id}
-              id={product.id}
-              slug={product.slug}
-              name={product.name}
-              price={product.price}
-              image={product.images[0]}
-              product={product}
-            />
-          ))}
-        </div>
+
+        {isFeaturedLoading ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((n) => (
+              <div key={n} className="rounded-xl aspect-[3/4] bg-gray-100 animate-pulse" />
+            ))}
+          </div>
+        ) : featuredProducts.length === 0 ? (
+          <div className="text-center py-12 border border-dashed rounded-xl bg-white text-muted-foreground text-sm">
+            Henüz öne çıkan ürün eklenmedi.
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {featuredProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
-      {/* Trust Badges */}
+      {/* ─── 4. YENİ GELENLER ─── */}
+      {newArrivals.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 md:px-8 pb-10 md:pb-14">
+          <div className="flex items-center justify-between mb-6 pb-2 border-b border-gray-100">
+            <h2 className="font-serif text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">
+              Yeni Gelenler
+            </h2>
+            <Link
+              href="/koleksiyon/yeni-gelenler"
+              className="text-xs sm:text-sm font-semibold text-gray-700 hover:text-[#4A5D3E] flex items-center gap-1 transition-colors"
+            >
+              <span>Tümünü Gör</span> <ArrowRight size={14} />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {newArrivals.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                badge="Yeni"
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ─── 5. GÜVEN ROZETLERİ ─── */}
       <section className="border-t border-gray-100 bg-white">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
