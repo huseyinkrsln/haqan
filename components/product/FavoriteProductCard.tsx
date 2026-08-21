@@ -39,11 +39,13 @@ export default function FavoriteProductCard({
   // Sepette var mı kontrolü
   const isAlreadyInCart = cartItems.some((i) => String(i.id) === String(product.id));
 
+  const inStockVariant = product.variants?.find((v: any) => (v.stockQuantity || 0) > 0);
+  const isOutOfStock = product.inStock === false || !inStockVariant;
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (addedToCart) return; // Çift tıklamayı ve tekrar eklemeyi engelle
+    if (addedToCart || isOutOfStock) return;
 
-    const inStockVariant = product.variants?.find((v: any) => (v.stockQuantity || 0) > 0);
     const realVariantId = inStockVariant?.variantId || inStockVariant?.id || product.variants?.[0]?.variantId || product.variants?.[0]?.id;
 
     addItem({
@@ -146,11 +148,13 @@ export default function FavoriteProductCard({
         {/* 🌟 SEPETE EKLE BUTONU 🌟 */}
         <button
           onClick={handleAddToCart}
-          disabled={addedToCart}
-          className={`w-full mt-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold tracking-wider transition-all shadow-2xs cursor-pointer ${
-            addedToCart
+          disabled={addedToCart || isOutOfStock}
+          className={`w-full mt-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold tracking-wider transition-all shadow-2xs ${
+            isOutOfStock
+              ? "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed shadow-none"
+              : addedToCart
               ? "bg-emerald-600 text-white border border-emerald-600 cursor-not-allowed"
-              : "bg-[#4A5D3E] text-white hover:bg-[#3D4D33] active:scale-[0.98]"
+              : "bg-[#4A5D3E] text-white hover:bg-[#3D4D33] active:scale-[0.98] cursor-pointer"
           }`}
         >
           {addedToCart ? (
@@ -158,6 +162,8 @@ export default function FavoriteProductCard({
               <Check size={14} />
               EKLENDİ ✓
             </>
+          ) : isOutOfStock ? (
+            "TÜKENDİ"
           ) : (
             <>
               <ShoppingBag size={14} />

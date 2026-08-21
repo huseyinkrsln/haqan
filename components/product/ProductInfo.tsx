@@ -96,6 +96,10 @@ export default function ProductInfo({
   });
 
   const activeStock = activeVariant?.stockQuantity ?? 0;
+  const isProductOutOfStock =
+    product.inStock === false ||
+    (Array.isArray(product.variants) && product.variants.length > 0 && !product.variants.some((v: any) => (v.stockQuantity || 0) > 0)) ||
+    (!product.variants || product.variants.length === 0);
   const hasAnyStockInColor = availableVariants.length === 0 || availableVariants.some((v: any) => (v.stockQuantity ?? 0) > 0);
   const isSelectedSizeOutOfStock = activeVariant !== undefined && activeStock <= 0;
   const isEntireColorOutOfStock = availableVariants.length > 0 && !hasAnyStockInColor;
@@ -121,6 +125,10 @@ export default function ProductInfo({
   const wishlisted = isWishlisted(String(product.id));
 
   const handleAddToCart = () => {
+    if (isProductOutOfStock) {
+      return;
+    }
+
     if (availableVariants.length > 0 && selectedSizeId === null) {
       setSizeError(true);
       return;
@@ -323,10 +331,18 @@ export default function ProductInfo({
         </div>
       )}
 
+      {/* 🌟 GENEL STOK TÜKENME UYARISI 🌟 */}
+      {isProductOutOfStock && (
+        <div className="flex items-center gap-2.5 p-3.5 bg-amber-50/90 border border-amber-200/80 rounded-xl text-amber-900 text-xs font-medium leading-relaxed shadow-2xs">
+          <AlertCircle size={17} className="text-amber-600 shrink-0" />
+          <span>Bu ürünün stoğu geçici olarak tükenmiştir. Yeniden stoklara girdiğinde haberdar olmak için favorilerinize ekleyebilirsiniz.</span>
+        </div>
+      )}
+
       {/* 🌟 SATIN ALMA VE SEPETE EKLEME ALANI (DOĞRU BUTON DURUMU) 🌟 */}
       <div className="flex gap-2.5 sm:gap-3 items-center pt-3 border-t border-gray-100">
         {/* Adet Seçici */}
-        <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden bg-white shrink-0 shadow-2xs">
+        <div className={`flex items-center border border-gray-200 rounded-xl overflow-hidden bg-white shrink-0 shadow-2xs ${isProductOutOfStock ? "opacity-40 pointer-events-none" : ""}`}>
           <button
             onClick={() => setQuantity((q) => Math.max(1, q - 1))}
             className="px-3 py-2.5 hover:bg-gray-50 transition-colors text-gray-600 cursor-pointer"
@@ -349,9 +365,9 @@ export default function ProductInfo({
         {/* Sepete Ekle Butonu */}
         <button
           onClick={handleAddToCart}
-          disabled={isSelectedSizeOutOfStock || isEntireColorOutOfStock}
+          disabled={isProductOutOfStock || isSelectedSizeOutOfStock || isEntireColorOutOfStock}
           className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 sm:px-6 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-md cursor-pointer ${
-            isSelectedSizeOutOfStock || isEntireColorOutOfStock
+            isProductOutOfStock || isSelectedSizeOutOfStock || isEntireColorOutOfStock
               ? "bg-gray-200 text-gray-400 cursor-not-allowed shadow-none"
               : addedToCart
               ? "bg-emerald-600 text-white"
@@ -363,6 +379,8 @@ export default function ProductInfo({
               <Check size={16} />
               Sepete Eklendi!
             </>
+          ) : isProductOutOfStock ? (
+            "Stokta Yok / Tükendi"
           ) : isEntireColorOutOfStock ? (
             "Bu Renkte Stok Tükendi"
           ) : isSelectedSizeOutOfStock ? (

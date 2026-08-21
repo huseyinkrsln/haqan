@@ -78,10 +78,8 @@ export function useProducts(params?: ProductQueryParams) {
       const inStockList = list.filter((p: any) => {
         if (p.inStock === false || p.InStock === false) return false;
         const variants = p.variants || p.Variants;
-        if (Array.isArray(variants) && variants.length > 0) {
-          return variants.some((v: any) => Number(v.stockQuantity ?? v.StockQuantity ?? 0) > 0);
-        }
-        return true;
+        if (!Array.isArray(variants) || variants.length === 0) return false;
+        return variants.some((v: any) => Number(v.stockQuantity ?? v.StockQuantity ?? 0) > 0);
       });
 
       return {
@@ -114,42 +112,33 @@ export function useProductBySlug(slug: string) {
     queryKey: ["product-by-slug", slug],
     queryFn: async () => {
       if (!slug) return null;
-      const targetSlug = normalizeSlug(slug);
 
-      // 1. Vitrin listesinden ürünleri çek
-      const res = await axiosInstance.get("/api/products/showcase", {
-        params: { take: 100 },
-      });
+      // 1. Önce doğrudan slug ile backend'den çekmeyi dene
+      try {
+        const res = await axiosInstance.get(`/api/products/getbyid?slug=${encodeURIComponent(slug)}`);
+        const raw = res.data;
+        const product = raw?.data || raw;
+        if (product && product.id) {
+          return product;
+        }
+      } catch {
+        // Devam et (sayısal ID veya vitrin araması fallback'i)
+      }
 
-      const raw = res.data;
-      const list: Product[] = Array.isArray(raw)
-        ? raw
-        : Array.isArray(raw?.data)
-        ? raw.data
-        : Array.isArray(raw?.data?.data)
-        ? raw.data.data
-        : [];
-
-      // 2. Slug veya İsim veya ID üzerinden eşleşeni bul
-      const found = list.find((p) => {
-        const pSlug = normalizeSlug(p.slug);
-        const pName = normalizeSlug(p.name);
-        return pSlug === targetSlug || pName === targetSlug || String(p.id) === slug;
-      });
-
-      if (found) {
+      // 2. Eğer slug sayısal ise ID ile dene
+      if (!isNaN(Number(slug))) {
         try {
-          // 3. Detay endpoint'inden tüm zenginleştirilmiş verileri çek
-          const detailRes = await axiosInstance.get(
-            `/api/products/getbyid?id=${found.id}`
-          );
-          const detailRaw = detailRes.data;
-          const detailedProduct = detailRaw?.data || detailRaw;
-          return detailedProduct && detailedProduct.id ? detailedProduct : found;
+          const res = await axiosInstance.get(`/api/products/getbyid?id=${Number(slug)}`);
+          const raw = res.data;
+          const product = raw?.data || raw;
+          if (product && product.id) {
+            return product;
+          }
         } catch {
-          return found;
+          // Devam et
         }
       }
+
       return null;
     },
     enabled: Boolean(slug),
