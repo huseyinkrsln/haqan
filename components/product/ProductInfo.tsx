@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Heart, ShoppingBag, Check, AlertCircle, Minus, Plus, Ban, CheckCircle2 } from "lucide-react";
+import { Heart, ShoppingBag, Check, AlertCircle, Minus, Plus, Ban, CheckCircle2, BadgeCheck } from "lucide-react";
 import { Product } from "@/types/api.types";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, getMinioUrl } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 
@@ -37,8 +37,10 @@ export default function ProductInfo({
   useEffect(() => {
     if (selectedColorId && availableColors.some((c) => c.id === selectedColorId)) {
       setActiveColorId(selectedColorId);
-    } else if (availableColors.length > 0 && !availableColors.some((c) => c.id === activeColorId)) {
-      setActiveColorId(availableColors[0].id);
+    } else if (availableColors.length > 0 && (!activeColorId || !availableColors.some((c) => c.id === activeColorId))) {
+      const defaultId = availableColors[0].id;
+      setActiveColorId(defaultId);
+      if (onColorChange) onColorChange(defaultId);
     }
   }, [selectedColorId, availableColors]);
 
@@ -386,6 +388,35 @@ export default function ProductInfo({
           <Heart size={18} className={wishlisted ? "fill-current text-rose-600" : ""} />
         </button>
       </div>
+
+      {/* 🌟 4. ÖNE ÇIKAN ÖZELLİKLER (FEATURES) 🌟 */}
+      {product.features && product.features.length > 0 && (
+        <div className="pt-4 border-t border-gray-100 space-y-2.5">
+          <p className="text-xs font-semibold tracking-widest text-gray-500 uppercase flex items-center gap-1.5">
+            <BadgeCheck size={15} className="text-[#4A5D3E]" />
+            Öne Çıkan Özellikler
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {product.features.map((f: any) => (
+              <div
+                key={f.id}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-gray-200/80 bg-gray-50/70 text-gray-800 text-xs font-medium shadow-2xs"
+              >
+                {f.icon ? (
+                  <img
+                    src={getMinioUrl(f.icon)}
+                    alt={f.name}
+                    className="w-4 h-4 object-contain shrink-0"
+                  />
+                ) : (
+                  <CheckCircle2 size={14} className="text-[#4A5D3E] shrink-0" />
+                )}
+                <span>{f.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Açıklama */}
       {product.description && (

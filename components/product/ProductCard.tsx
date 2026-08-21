@@ -204,17 +204,14 @@ export default function ProductCard({
           {colors && colors.length > 0 && (
             <div className="flex items-center gap-1.5 mt-2">
               {colors.map((c: any) => (
-                <button
+                <Link
                   key={c.colorId ?? c.id}
+                  href={`/urun/${productSlug}?color=${c.colorId ?? c.id}`}
                   title={c.colorName}
                   onMouseEnter={() => {
                     if (c.imageUrl) setActiveImage(c.imageUrl);
                   }}
                   onMouseLeave={() => setActiveImage(null)}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (c.imageUrl) setActiveImage(c.imageUrl);
-                  }}
                   className="w-3.5 h-3.5 rounded-full border border-gray-300 ring-1 ring-black/5 hover:scale-125 transition-transform cursor-pointer relative"
                   style={{ backgroundColor: c.hexCode || "#000000" }}
                 />

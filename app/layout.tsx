@@ -9,6 +9,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import StickyCouponBar from "@/components/layout/StickyCouponBar";
+import { ToastProvider } from "@/context/ToastContext";
 import { cn } from "@/lib/utils";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
@@ -44,16 +45,18 @@ export default function RootLayout({
     <html lang="tr" className={cn(inter.variable, playfair.variable, "font-sans", geist.variable)}>
       <body className="min-h-screen bg-[#F9F9FB] font-sans antialiased">
         <QueryProvider>
-          <CartProvider>
-            <WishlistProvider>
-              <AnnouncementBar />
-              <Header />
-              <main className="pb-20 md:pb-0">{children}</main>
-              <Footer />
-              <StickyCouponBar />
-              <MobileBottomNav />
-            </WishlistProvider>
-          </CartProvider>
+          <ToastProvider>
+            <CartProvider>
+              <WishlistProvider>
+                <AnnouncementBar />
+                <Header />
+                <main className="pb-20 md:pb-0">{children}</main>
+                <Footer />
+                <StickyCouponBar />
+                <MobileBottomNav />
+              </WishlistProvider>
+            </CartProvider>
+          </ToastProvider>
         </QueryProvider>
       </body>
     </html>

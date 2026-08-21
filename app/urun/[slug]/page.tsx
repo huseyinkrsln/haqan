@@ -1,7 +1,8 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useProductBySlug, useProducts } from "@/hooks/useProducts";
 import ProductImageGallery from "@/components/product/ProductImageGallery";
 import ProductInfo from "@/components/product/ProductInfo";
@@ -14,10 +15,21 @@ interface PageProps {
 
 export default function ProductPage({ params }: PageProps) {
   const { slug } = use(params);
+  const searchParams = useSearchParams();
+  const colorQueryParam = searchParams.get("color");
+
   const { data: product, isLoading } = useProductBySlug(slug);
 
   // Seçili renge göre galeri resimlerini filtreleme
-  const [selectedColorId, setSelectedColorId] = useState<number | undefined>(undefined);
+  const [selectedColorId, setSelectedColorId] = useState<number | undefined>(
+    colorQueryParam ? Number(colorQueryParam) : undefined
+  );
+
+  useEffect(() => {
+    if (colorQueryParam) {
+      setSelectedColorId(Number(colorQueryParam));
+    }
+  }, [colorQueryParam]);
 
   // İlgili ürünler (Aynı kategorideki diğer ürünler)
   const { data: relatedData } = useProducts({
@@ -61,12 +73,15 @@ export default function ProductPage({ params }: PageProps) {
     );
   }
 
-  // Renk bazlı resimler veya tüm resimler
-  const activeColorImages = selectedColorId
-    ? product.productColors?.find((pc) => pc.colorId === selectedColorId)?.images ||
-      product.images?.filter((img) => img.colorId === selectedColorId) ||
-      product.images
-    : product.images;
+  // Seçili renge ait görseller
+  const currentColorId = selectedColorId ?? (product.colors?.[0]?.colorId ?? undefined);
+  const activeColorObj = product.colors?.find((c) => c.colorId === currentColorId);
+
+  const activeColorImages = (activeColorObj?.images && activeColorObj.images.length > 0)
+    ? activeColorObj.images
+    : product.productColors?.find((pc) => pc.colorId === currentColorId)?.images ||
+      product.images?.filter((img: any) => img.colorId === currentColorId) ||
+      product.images;
 
   const galleryImages = (activeColorImages && activeColorImages.length > 0)
     ? activeColorImages

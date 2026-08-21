@@ -47,6 +47,7 @@ export interface Brand extends BaseEntity {
 
 export interface Feature extends BaseEntity {
   name: string;
+  icon?: string;
   description?: string;
 }
 
@@ -84,6 +85,7 @@ export interface ProductColorSummary {
   colorName: string;
   hexCode: string;
   imageUrl?: string;
+  images?: string[];
 }
 
 export interface Product extends BaseEntity {
@@ -108,8 +110,9 @@ export interface Product extends BaseEntity {
   brandName?: string;
   variants?: ProductVariant[];
   images?: ProductImage[];
-  productColors?: ProductColorItem[];
   features?: Feature[];
+  featureIds?: number[];
+  productColors?: ProductColorItem[];
   mainImageUrl?: string;
   colors?: ProductColorSummary[];
   sizes?: string[];

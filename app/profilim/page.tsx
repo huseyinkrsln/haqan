@@ -33,6 +33,7 @@ import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { formatPrice, getMinioUrl } from "@/lib/utils";
 import { axiosInstance } from "@/lib/axios";
+import { useToast } from "@/context/ToastContext";
 import AuthRequiredView from "@/components/auth/AuthRequiredView";
 
 type Tab = "siparisler" | "adresler" | "hesap" | "guvenlik";
@@ -381,11 +382,13 @@ interface DistrictOption {
 }
 
 function AddressesTab({ userId }: { userId?: number }) {
+  const { toast } = useToast();
   const [addresses, setAddresses] = useState<AddressItem[]>([]);
   const [cities, setCities] = useState<CityOption[]>([]);
   const [districts, setDistricts] = useState<DistrictOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [defaultId, setDefaultId] = useState<number | null>(null);
+  const [settingDefaultId, setSettingDefaultId] = useState<number | null>(null);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -403,8 +406,6 @@ function AddressesTab({ userId }: { userId?: number }) {
   const [formAddressLine2, setFormAddressLine2] = useState("");
   const [formIsDefault, setFormIsDefault] = useState(false);
   const [formError, setFormError] = useState("");
-
-  const storageKey = userId ? `haqan_default_address_${userId}` : "haqan_default_address";
 
   // 1. İlleri ve İlçeleri Çek
   useEffect(() => {
@@ -424,41 +425,36 @@ function AddressesTab({ userId }: { userId?: number }) {
 
         setCities(rawCities);
         setDistricts(rawDistricts);
-      } catch (err) {
-        console.warn("Konum verileri çekilemedi:", err);
+      } catch {
+        // Sessiz hata yakalama
       }
     }
     loadLocations();
   }, []);
 
   // 2. Kullanıcının Adreslerini Çek
-  const fetchAddresses = async () => {
+  const fetchAddresses = async (showLoading = true) => {
     if (!userId) {
       setLoading(false);
       return;
     }
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       const res = await axiosInstance.get(`/api/Addresses/getall?userId=${userId}`);
-      const rawData = Array.isArray(res.data)
+      const rawData: AddressItem[] = Array.isArray(res.data)
         ? res.data
         : res.data?.data || res.data?.items || [];
 
-      // Varsayılan adres ID'sini belirle
-      const savedDefault = localStorage.getItem(storageKey);
-      let defId = savedDefault ? Number(savedDefault) : null;
-
-      if (!defId && rawData.length > 0) {
-        defId = rawData[0].id;
-        localStorage.setItem(storageKey, String(defId));
-      }
+      // Backend'deki IsDefault veya ilk adres varsayılan seçilir
+      const defaultAddr = rawData.find((a) => a.isDefault);
+      const defId = defaultAddr ? defaultAddr.id : rawData.length > 0 ? rawData[0].id : null;
 
       setDefaultId(defId);
       setAddresses(rawData);
-    } catch (err) {
-      console.error("Adresler yüklenemedi:", err);
+    } catch {
+      toast.error("Adresleriniz yüklenirken bir sorun oluştu.");
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
@@ -466,10 +462,29 @@ function AddressesTab({ userId }: { userId?: number }) {
     fetchAddresses();
   }, [userId]);
 
-  // Varsayılan Yap
-  const handleSetDefault = (id: number) => {
-    setDefaultId(id);
-    localStorage.setItem(storageKey, String(id));
+  // Varsayılan Yap (Backend API)
+  const handleSetDefault = async (id: number) => {
+    try {
+      setSettingDefaultId(id);
+      await axiosInstance.put("/api/Addresses/setdefault", {
+        id,
+        userId: Number(userId || 1),
+      });
+      setDefaultId(id);
+      setAddresses((prev) =>
+        prev.map((a) => ({
+          ...a,
+          isDefault: a.id === id,
+        }))
+      );
+      toast.success("Varsayılan teslimat adresiniz güncellendi.");
+      await fetchAddresses(false);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Varsayılan adres güncellenemedi.");
+      await fetchAddresses(false);
+    } finally {
+      setSettingDefaultId(null);
+    }
   };
 
   // Silme İşlemi
@@ -478,20 +493,11 @@ function AddressesTab({ userId }: { userId?: number }) {
       await axiosInstance.delete("/api/Addresses", {
         data: { id },
       });
-      setAddresses((prev) => prev.filter((a) => a.id !== id));
-      if (defaultId === id) {
-        const remaining = addresses.filter((a) => a.id !== id);
-        if (remaining.length > 0) {
-          handleSetDefault(remaining[0].id);
-        } else {
-          setDefaultId(null);
-          localStorage.removeItem(storageKey);
-        }
-      }
+      toast.success("Teslimat adresi başarıyla silindi.");
+      await fetchAddresses();
       setDeleteConfirmId(null);
-    } catch (err) {
-      console.error("Adres silinemedi:", err);
-      alert("Adres silinirken bir hata oluştu.");
+    } catch {
+      toast.error("Adres silinirken bir hata oluştu.");
     }
   };
 
@@ -507,7 +513,7 @@ function AddressesTab({ userId }: { userId?: number }) {
       setFormDistrictId(addr.districtId || 0);
       setFormAddressLine1(addr.addressLine1 || "");
       setFormAddressLine2(addr.addressLine2 || "");
-      setFormIsDefault(defaultId === addr.id);
+      setFormIsDefault(addr.isDefault || defaultId === addr.id);
     } else {
       setEditingAddress(null);
       setFormTitle("Evim");
@@ -544,6 +550,7 @@ function AddressesTab({ userId }: { userId?: number }) {
         countryId: 1, // Türkiye
         cityId: Number(formCityId),
         districtId: Number(formDistrictId) || 1,
+        isDefault: formIsDefault,
       };
 
       if (editingAddress) {
@@ -552,27 +559,20 @@ function AddressesTab({ userId }: { userId?: number }) {
           ...payload,
           id: editingAddress.id,
         });
+        toast.success("Adres bilgileriniz güncellendi.");
       } else {
         // YENİ EKLE
-        const res = await axiosInstance.post("/api/Addresses", payload);
-        const createdId = res.data?.id || res.data?.data?.id;
-        if (formIsDefault && createdId) {
-          handleSetDefault(Number(createdId));
-        }
+        await axiosInstance.post("/api/Addresses", payload);
+        toast.success("Yeni teslimat adresi başarıyla eklendi.");
       }
 
       await fetchAddresses();
-
-      if (formIsDefault && editingAddress) {
-        handleSetDefault(editingAddress.id);
-      }
-
       setIsModalOpen(false);
     } catch (err: any) {
-      console.error("Adres kaydedilemedi:", err);
-      setFormError(
-        err.response?.data?.message || err.response?.data || "Adres kaydedilirken bir hata oluştu."
-      );
+      const errMsg =
+        err.response?.data?.message || err.response?.data || "Adres kaydedilirken bir hata oluştu.";
+      setFormError(errMsg);
+      toast.error(errMsg);
     } finally {
       setSubmitting(false);
     }
@@ -702,9 +702,17 @@ function AddressesTab({ userId }: { userId?: number }) {
                   {!isDefault && (
                     <button
                       onClick={() => handleSetDefault(addr.id)}
-                      className="text-xs font-semibold text-gray-600 hover:text-[#4A5D3E] hover:underline cursor-pointer"
+                      disabled={settingDefaultId === addr.id}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-[#4A5D3E] hover:underline cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
                     >
-                      Varsayılan Yap
+                      {settingDefaultId === addr.id ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-[#4A5D3E]" />
+                          <span>Kaydediliyor...</span>
+                        </>
+                      ) : (
+                        "Varsayılan Yap"
+                      )}
                     </button>
                   )}
                 </div>
@@ -960,83 +968,260 @@ function AddressesTab({ userId }: { userId?: number }) {
   );
 }
 
-function AccountTab({ initialUser }: { initialUser: any }) {
+function AccountTab({
+  initialUser,
+}: {
+  initialUser: any;
+  onUserUpdated?: () => void;
+}) {
+  const { toast } = useToast();
   const inputCls =
     "w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#4A5D3E] transition-colors bg-white";
   const labelCls = "block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide";
-  const [saved, setSaved] = useState(false);
 
-  const fullName = initialUser?.name || "Kullanıcı";
+  const fullName = initialUser?.name || "";
   const parts = fullName.split(" ");
-  const firstName = parts[0] || "";
-  const lastName = parts.slice(1).join(" ") || "";
+  const [firstName, setFirstName] = useState(parts[0] || "");
+  const [lastName, setLastName] = useState(parts.slice(1).join(" ") || "");
+  const [email, setEmail] = useState(initialUser?.email || "");
+  const [phone, setPhone] = useState(initialUser?.mobilePhones || initialUser?.phone || "");
+  const [loading, setLoading] = useState(false);
+
+  const userId = Number(initialUser?.id || initialUser?.userId || 1);
+
+  // Veritabanından en güncel kullanıcı bilgilerini çek
+  useEffect(() => {
+    async function loadUserDetails() {
+      if (!userId) return;
+      try {
+        const res = await axiosInstance.get(`/api/v1/Users/${userId}`);
+        const data = res.data?.data || res.data;
+        if (data) {
+          if (data.fullName) {
+            const splitted = data.fullName.trim().split(" ");
+            setFirstName(splitted[0] || "");
+            setLastName(splitted.slice(1).join(" ") || "");
+          }
+          if (data.email) setEmail(data.email);
+          if (data.mobilePhones) setPhone(data.mobilePhones);
+        }
+      } catch {
+        // Sessiz yakala
+      }
+    }
+    loadUserDetails();
+  }, [userId]);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!firstName.trim() || !email.trim()) {
+      toast.error("Ad ve E-posta alanları zorunludur.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const payload = {
+        userId,
+        fullName: `${firstName.trim()} ${lastName.trim()}`.trim(),
+        email: email.trim(),
+        mobilePhones: phone.trim(),
+      };
+
+      await axiosInstance.put("/api/v1/Users", payload);
+      toast.success("Kişisel bilgileriniz başarıyla güncellendi.");
+    } catch (err: any) {
+      const errMsg =
+        err.response?.data?.message ||
+        err.response?.data ||
+        "Bilgiler güncellenirken bir hata oluştu.";
+      toast.error(errMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-2xs p-5 sm:p-6 space-y-5">
+      <form
+        onSubmit={handleSave}
+        className="bg-white rounded-2xl border border-gray-100 shadow-2xs p-5 sm:p-6 space-y-5"
+      >
         <h3 className="font-serif text-lg font-bold text-gray-900">Kişisel Bilgiler</h3>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className={labelCls}>Ad</label>
-            <input className={inputCls} defaultValue={firstName} />
+            <input
+              className={inputCls}
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              placeholder="Adınız"
+              required
+            />
           </div>
           <div>
             <label className={labelCls}>Soyad</label>
-            <input className={inputCls} defaultValue={lastName} />
+            <input
+              className={inputCls}
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              placeholder="Soyadınız"
+            />
           </div>
           <div>
             <label className={labelCls}>E-posta Adresi</label>
-            <input className={inputCls} type="email" defaultValue={initialUser?.email || ""} readOnly />
+            <input
+              className={inputCls}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="ornek@email.com"
+              required
+            />
           </div>
           <div>
             <label className={labelCls}>Telefon Numarası</label>
-            <input className={inputCls} type="tel" defaultValue="+90 532 123 45 67" />
+            <input
+              className={inputCls}
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="05XX XXX XX XX"
+            />
           </div>
         </div>
+
         <button
-          onClick={() => { setSaved(true); setTimeout(() => setSaved(false), 2500); }}
-          className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all shadow-sm cursor-pointer w-full sm:w-auto ${
-            saved ? "bg-emerald-600 text-white" : "bg-[#4A5D3E] hover:bg-[#3A4B30] text-white"
-          }`}
+          type="submit"
+          disabled={loading}
+          className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all shadow-sm cursor-pointer w-full sm:w-auto bg-[#4A5D3E] hover:bg-[#3A4B30] text-white disabled:opacity-75 disabled:cursor-not-allowed"
         >
-          {saved ? <><Check size={15} /> Kaydedildi</> : "Değişiklikleri Kaydet"}
+          {loading ? (
+            <>
+              <Loader2 size={15} className="animate-spin" />
+              <span>Kaydediliyor...</span>
+            </>
+          ) : (
+            <span>Değişiklikleri Kaydet</span>
+          )}
         </button>
-      </div>
+      </form>
     </div>
   );
 }
 
-function SecurityTab() {
+function SecurityTab({ userId }: { userId?: number }) {
+  const { toast } = useToast();
   const inputCls =
     "w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#4A5D3E] transition-colors bg-white";
   const labelCls = "block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide";
-  const [pwSaved, setPwSaved] = useState(false);
+
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentPassword) {
+      toast.error("Lütfen mevcut şifrenizi giriniz.");
+      return;
+    }
+    if (!password) {
+      toast.error("Lütfen yeni şifrenizi giriniz.");
+      return;
+    }
+    if (password.length < 6) {
+      toast.error("Yeni şifre en az 6 karakter uzunluğunda olmalıdır.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast.error("Yeni şifreler birbiriyle eşleşmiyor.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      await axiosInstance.put("/api/v1/auth/user-password", {
+        userId: Number(userId || 1),
+        currentPassword,
+        password,
+      });
+
+      toast.success("Şifreniz başarıyla güncellendi.");
+      setCurrentPassword("");
+      setPassword("");
+      setConfirmPassword("");
+    } catch (err: any) {
+      const errMsg =
+        err.response?.data?.message ||
+        err.response?.data ||
+        "Şifre güncellenirken bir hata oluştu.";
+      toast.error(errMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-2xs p-5 sm:p-6 space-y-4">
+      <form
+        onSubmit={handlePasswordChange}
+        className="bg-white rounded-2xl border border-gray-100 shadow-2xs p-5 sm:p-6 space-y-4"
+      >
         <h3 className="font-serif text-lg font-bold text-gray-900">Şifre Güncelle</h3>
+
         <div>
           <label className={labelCls}>Mevcut Şifre</label>
-          <input className={inputCls} type="password" placeholder="••••••••" />
+          <input
+            className={inputCls}
+            type="password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            placeholder="••••••••"
+            required
+          />
         </div>
         <div>
           <label className={labelCls}>Yeni Şifre</label>
-          <input className={inputCls} type="password" placeholder="En az 8 karakter" />
+          <input
+            className={inputCls}
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="En az 6 karakter"
+            required
+          />
         </div>
         <div>
           <label className={labelCls}>Yeni Şifre (Tekrar)</label>
-          <input className={inputCls} type="password" placeholder="••••••••" />
+          <input
+            className={inputCls}
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="••••••••"
+            required
+          />
         </div>
         <button
-          onClick={() => { setPwSaved(true); setTimeout(() => setPwSaved(false), 2500); }}
-          className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all shadow-sm cursor-pointer w-full sm:w-auto ${
-            pwSaved ? "bg-emerald-600 text-white" : "bg-[#4A5D3E] hover:bg-[#3A4B30] text-white"
-          }`}
+          type="submit"
+          disabled={loading}
+          className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all shadow-sm cursor-pointer w-full sm:w-auto bg-[#4A5D3E] hover:bg-[#3A4B30] text-white disabled:opacity-75 disabled:cursor-not-allowed"
         >
-          {pwSaved ? <><Check size={15} /> Şifre Güncellendi</> : "Şifreyi Güncelle"}
+          {loading ? (
+            <>
+              <Loader2 size={15} className="animate-spin" />
+              <span>Güncelleniyor...</span>
+            </>
+          ) : (
+            <span>Şifreyi Güncelle</span>
+          )}
         </button>
-      </div>
+      </form>
     </div>
   );
 }
@@ -1048,8 +1233,8 @@ export default function ProfilimPage() {
   const { totalItems: cartCount } = useCart();
   const { totalItems: wishlistCount } = useWishlist();
 
-  // Yükleme Durumu
-  if (status === "loading") {
+  // Yükleme Durumu (Sadece ilk açılışta ve session henüz yokken)
+  if (status === "loading" && !session) {
     return (
       <div className="max-w-6xl mx-auto px-4 md:px-8 py-12 animate-pulse space-y-6">
         <div className="h-6 w-32 bg-gray-200 rounded" />
@@ -1215,7 +1400,9 @@ export default function ProfilimPage() {
             <AddressesTab userId={Number((user as any).id || (user as any).userId || 1)} />
           )}
           {activeTab === "hesap" && <AccountTab initialUser={user} />}
-          {activeTab === "guvenlik" && <SecurityTab />}
+          {activeTab === "guvenlik" && (
+            <SecurityTab userId={Number((user as any).id || (user as any).userId || 1)} />
+          )}
         </div>
       </div>
     </div>

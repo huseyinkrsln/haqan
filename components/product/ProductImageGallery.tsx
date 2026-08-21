@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, Shirt, Maximize2 } from "lucide-react";
 import { getMinioUrl } from "@/lib/utils";
@@ -15,6 +15,10 @@ export default function ProductImageGallery({
   productName,
 }: ProductImageGalleryProps) {
   const [selected, setSelected] = useState(0);
+
+  useEffect(() => {
+    setSelected(0);
+  }, [images]);
 
   const validImages = images
     .map((img) => getMinioUrl(typeof img === "string" ? img : img?.imageUrl))
