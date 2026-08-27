@@ -65,31 +65,24 @@ export function useProducts(params?: ProductQueryParams) {
       });
 
       const raw = res.data;
-      const list: Product[] = Array.isArray(raw)
-        ? raw
-        : Array.isArray(raw?.Data)
-        ? raw.Data
-        : Array.isArray(raw?.data)
-        ? raw.data
+      const paginatedData = raw?.data || raw;
+
+      const list: Product[] = Array.isArray(paginatedData)
+        ? paginatedData
+        : Array.isArray(paginatedData?.data)
+        ? paginatedData.data
         : Array.isArray(raw?.data?.data)
         ? raw.data.data
         : [];
 
-      const inStockList = list.filter((p: any) => {
-        if (p.inStock === false || p.InStock === false) return false;
-        const variants = p.variants || p.Variants;
-        if (!Array.isArray(variants) || variants.length === 0) return false;
-        return variants.some((v: any) => Number(v.stockQuantity ?? v.StockQuantity ?? 0) > 0);
-      });
-
       return {
-        data: inStockList,
+        data: list,
         success: true,
-        message: "",
-        pageNumber: raw?.pageNumber || raw?.PageNumber || 1,
-        pageSize: raw?.pageSize || raw?.PageSize || inStockList.length,
-        totalRecords: inStockList.length,
-        totalPages: raw?.totalPages || raw?.TotalPages || 1,
+        message: raw?.message || "",
+        pageNumber: paginatedData?.pageNumber || 1,
+        pageSize: paginatedData?.pageSize || list.length,
+        totalRecords: paginatedData?.totalRecords ?? list.length,
+        totalPages: paginatedData?.totalPages || 1,
       };
     },
   });

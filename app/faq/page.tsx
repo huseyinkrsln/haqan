@@ -2,73 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
-
-const faqs = [
-  {
-    category: "Sipariş & Ödeme",
-    items: [
-      {
-        q: "Hangi ödeme yöntemlerini kullanabiliyorum?",
-        a: "Kredi kartı, banka kartı (Visa, Mastercard, American Express), havale/EFT ve kapıda ödeme seçeneklerini kullanabilirsiniz. Kredi kartıyla 12 aya varan taksit imkânı sunulmaktadır.",
-      },
-      {
-        q: "Siparişimi verdikten sonra iptal edebilir miyim?",
-        a: "Siparişiniz kargoya teslim edilmeden önce iptal talebinde bulunabilirsiniz. Siparişiniz kargoya verilmişse, ürünü teslim aldıktan sonra iade sürecini başlatabilirsiniz.",
-      },
-      {
-        q: "Fatura bilgilerimi nasıl güncellerim?",
-        a: "Hesabım > Adres Bilgilerim bölümünden fatura adresinizi güncelleyebilirsiniz. Daha önce verilmiş siparişlerin fatura bilgileri değiştirilemez.",
-      },
-    ],
-  },
-  {
-    category: "Kargo & Teslimat",
-    items: [
-      {
-        q: "Kargom ne zaman ulaşır?",
-        a: "Onaylanan siparişler 1-3 iş günü içinde teslimat yapılır. Hafta sonu verilen siparişler pazartesi işleme alınır. Özel dönemlerde (yılbaşı, bayram vb.) süre 5 iş gününe çıkabilir.",
-      },
-      {
-        q: "Ücretsiz kargo için alt limit nedir?",
-        a: "999 TL ve üzeri tüm siparişlerde kargo ücretsizdir. Bu tutarın altındaki siparişlerde standart kargo ücreti alınır.",
-      },
-      {
-        q: "Kargo takibini nasıl yapabilirim?",
-        a: "Siparişiniz kargoya verildiğinde e-posta ile takip kodu gönderilir. Ayrıca Sipariş Takibi sayfamızı kullanarak siparişinizin anlık durumunu görebilirsiniz.",
-      },
-    ],
-  },
-  {
-    category: "İade & Değişim",
-    items: [
-      {
-        q: "İade süresi ne kadar?",
-        a: "Teslim tarihinden itibaren 14 gün içinde iade talebinde bulunabilirsiniz. Ürünlerin kullanılmamış, etiketli ve orijinal ambalajında olması gerekmektedir.",
-      },
-      {
-        q: "İade nasıl yapılır?",
-        a: "Hesabım > Siparişlerim bölümünden iade talebini başlatın. Onay sonrası kargo kodu e-posta ile gönderilir. Ürünü kargo ile gönderin, tutar 3-7 iş günü içinde iade edilir.",
-      },
-      {
-        q: "Değişim yapabilir miyim?",
-        a: "Evet! İade ettiğiniz ürün yerine farklı beden veya renk talep edebilirsiniz. Stok durumuna göre değişim yapılır.",
-      },
-    ],
-  },
-  {
-    category: "Ürün & Beden",
-    items: [
-      {
-        q: "Beden seçimi için ne yapmalıyım?",
-        a: "Her ürün sayfasında detaylı beden tablosu mevcuttur. Göğüs, bel ve kalça ölçülerinizi alarak en uygun bedeni belirleyebilirsiniz. Şüphe durumunda müşteri hizmetlerimizle iletişime geçin.",
-      },
-      {
-        q: "Ürünler nasıl bakım gerektiriyor?",
-        a: "Ürün etiketindeki bakım talimatlarını takip etmenizi öneririz. Genel olarak düşük sıcaklıkta ters çevrilerek yıkama ve gölgede kurutma tavsiye edilir.",
-      },
-    ],
-  },
-];
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
@@ -89,6 +23,76 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 }
 
 export default function FaqPage() {
+  const { data: settings } = useSiteSettings();
+  const threshold = settings?.freeshippingthreshold || settings?.freeShippingThreshold || "1500";
+
+  const faqs = [
+    {
+      category: "Sipariş & Ödeme",
+      items: [
+        {
+          q: "Hangi ödeme yöntemlerini kabul ediyorsunuz?",
+          a: "Kredi kartı (Visa, Mastercard, Troy), banka kartı ve anlaşmalı bankalarla taksitli ödeme seçeneklerini kullanabilirsiniz. Tüm ödemeler 256-bit SSL güvenlik protokolüyle korunmaktadır.",
+        },
+        {
+          q: "Taksit seçenekleri nelerdir?",
+          a: "Anlaşmalı bankaların kredi kartlarına 2'den 12'ye kadar taksit imkanı sunulmaktadır. Taksit seçenekleri ve vade farkı oranları ödeme sayfasında kart numaranızı girdikten sonra görüntülenir.",
+        },
+        {
+          q: "Fatura bilgilerimi nasıl değiştirebilirim?",
+          a: "Hesabım > Adres Bilgilerim bölümünden fatura adresinizi güncelleyebilirsiniz. Daha önce verilmiş siparişlerin fatura bilgileri değiştirilemez.",
+        },
+      ],
+    },
+    {
+      category: "Kargo & Teslimat",
+      items: [
+        {
+          q: "Kargom ne zaman ulaşır?",
+          a: "Onaylanan siparişler 1-3 iş günü içinde teslimat yapılır. Hafta sonu verilen siparişler pazartesi işleme alınır. Özel dönemlerde (yılbaşı, bayram vb.) süre 5 iş gününe çıkabilir.",
+        },
+        {
+          q: "Ücretsiz kargo için alt limit nedir?",
+          a: `${threshold} TL ve üzeri tüm siparişlerde kargo ücretsizdir. Bu tutarın altındaki siparişlerde standart kargo ücreti alınır.`,
+        },
+        {
+          q: "Kargo takibini nasıl yapabilirim?",
+          a: "Siparişiniz kargoya verildiğinde e-posta ile takip kodu gönderilir. Ayrıca Sipariş Takibi sayfamızı kullanarak siparişinizin anlık durumunu görebilirsiniz.",
+        },
+      ],
+    },
+    {
+      category: "İade & Değişim",
+      items: [
+        {
+          q: "İade süresi ne kadar?",
+          a: "Teslim tarihinden itibaren 14 gün içinde iade talebinde bulunabilirsiniz. Ürünlerin kullanılmamış, etiketli ve orijinal ambalajında olması gerekmektedir.",
+        },
+        {
+          q: "İade nasıl yapılır?",
+          a: "Hesabım > Siparişlerim bölümünden iade talebini başlatın. Onay sonrası kargo kodu e-posta ile gönderilir. Ürünü kargo ile gönderin, tutar 3-7 iş günü içinde iade edilir.",
+        },
+        {
+          q: "Değişim yapabilir miyim?",
+          a: "Evet! İade ettiğiniz ürün yerine farklı beden veya renk talep edebilirsiniz. Stok durumuna göre değişim yapılır.",
+        },
+      ],
+    },
+    {
+      category: "Ürün & Beden",
+      items: [
+        {
+          q: "Beden seçimi için ne yapmalıyım?",
+          a: "Her ürün sayfasında detaylı beden tablosu mevcuttur. Göğüs, bel ve kalça ölçülerinizi alarak en uygun bedeni belirleyebilirsiniz. Şüphe durumunda müşteri hizmetlerimizle iletişime geçin.",
+        },
+        {
+          q: "Ürünler nasıl bakım gerektiriyor?",
+          a: "Ürün etiketindeki bakım talimatlarını takip etmenizi öneririz. Genel olarak düşük sıcaklıkta ters çevrilerek yıkama ve gölgede kurutma tavsiye edilir.",
+        },
+      ],
+    },
+  ];
+
   return (
     <main className="bg-[#F9F9FB]">
       {/* Header */}
@@ -106,7 +110,7 @@ export default function FaqPage() {
               <h2 className="font-playfair text-xl font-bold text-zinc-900 mb-4 pb-3 border-b-2 border-zinc-900">
                 {section.category}
               </h2>
-              <div className="bg-white border border-zinc-200 px-6">
+              <div className="bg-white border border-zinc-200 px-6 rounded-xl">
                 {section.items.map((item) => (
                   <FaqItem key={item.q} q={item.q} a={item.a} />
                 ))}
@@ -115,12 +119,12 @@ export default function FaqPage() {
           ))}
         </div>
 
-        <div className="mt-16 bg-zinc-950 p-8 text-center">
+        <div className="mt-16 bg-zinc-950 p-8 text-center rounded-2xl">
           <p className="text-zinc-400 text-sm mb-4">Aradığınız cevabı bulamadınız mı?</p>
           <h3 className="font-playfair text-2xl text-white mb-6">Bize yazın</h3>
           <a
             href="/contact"
-            className="inline-block bg-white text-zinc-900 px-8 py-3 uppercase tracking-wider text-sm hover:bg-zinc-100 transition-colors"
+            className="inline-block bg-white text-zinc-900 px-8 py-3 uppercase tracking-wider text-sm hover:bg-zinc-100 transition-colors rounded-xl font-semibold"
           >
             İletişim Formu
           </a>

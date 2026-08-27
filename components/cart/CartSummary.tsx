@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { formatPrice } from "@/lib/utils";
 import { axiosInstance } from "@/lib/axios";
 
+import { useSiteSettings } from "@/hooks/useSiteSettings";
+
 interface CartSummaryProps {
   subtotal: number;
   showCheckoutButton?: boolean;
@@ -20,13 +22,15 @@ interface AppliedCoupon {
   discountAmount: number;
 }
 
-const SHIPPING_THRESHOLD = 999;
-const SHIPPING_FEE = 49;
-
 export default function CartSummary({
   subtotal,
   showCheckoutButton = true,
 }: CartSummaryProps) {
+  const { data: settings } = useSiteSettings();
+
+  const shippingThreshold = Number(settings?.freeshippingthreshold || settings?.freeShippingThreshold || 1500);
+  const shippingFee = Number(settings?.flatshippingrate || settings?.flatShippingRate || 79.90);
+
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
   const [loading, setLoading] = useState(false);
@@ -34,7 +38,7 @@ export default function CartSummary({
   const router = useRouter();
 
   const discount = appliedCoupon ? appliedCoupon.discountAmount : 0;
-  const shipping = subtotal >= SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
+  const shipping = subtotal >= shippingThreshold ? 0 : shippingFee;
   const total = Math.max(0, subtotal - discount + shipping);
 
   const handleApplyCoupon = async () => {
@@ -179,9 +183,9 @@ export default function CartSummary({
           </span>
         </div>
 
-        {subtotal < SHIPPING_THRESHOLD && (
+        {subtotal < shippingThreshold && (
           <p className="text-xs text-[#4A5D3E] bg-[#4A5D3E]/5 rounded-lg px-3 py-2">
-            {formatPrice(SHIPPING_THRESHOLD - subtotal)} daha alışveriş yapın, kargo ücretsiz!
+            {formatPrice(shippingThreshold - subtotal)} daha alışveriş yapın, kargo ücretsiz!
           </p>
         )}
 

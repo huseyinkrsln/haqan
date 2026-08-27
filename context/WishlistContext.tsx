@@ -115,47 +115,50 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     }
   }, [items, isLoaded, isAuthenticated]);
 
-  // 🌟 4. KULLANICI GİRİŞ YAPTIĞINDA BACKEND'DEN (PostgreSQL) ÇEK & BİRLEŞTİR 🌟
+  // 🌟 4. KULLANICI GİRİŞ YAPTIĞINDA BACKEND'DEN (PostgreSQL) ÇEK & SENKRONİZE ET 🌟
   useEffect(() => {
-    if (!isAuthenticated || !currentUserId) return;
+    if (!isAuthenticated) return;
 
     let isMounted = true;
 
     async function syncFromBackend() {
       try {
-        const res = await axiosInstance.get(`/api/ProductFavorites/getall?userId=${currentUserId}`);
+        const res = await axiosInstance.get(`/api/ProductFavorites/my-favorites`);
         const serverData = res.data;
         const serverFavorites = Array.isArray(serverData)
           ? serverData
           : serverData?.data || serverData?.items || [];
 
-        if (serverFavorites.length > 0 && isMounted) {
-          setItems((prevItems) => {
-            const map = new Map<string, Product>();
-            // Önce yereldekileri ekle
-            prevItems.forEach((p) => map.set(String(p.id), p));
+        if (isMounted) {
+          const map = new Map<string, Product>();
 
-            // Sunucudan gelenleri ekle
-            serverFavorites.forEach((fav: any) => {
-              const pid = String(fav.productId || fav.id);
-              if (!map.has(pid)) {
-                map.set(pid, {
-                  id: fav.productId || fav.id,
-                  name: fav.productName || "Favori Ürün",
-                  slug: fav.slug || String(fav.productId || fav.id),
-                  basePrice: fav.price || 0,
-                  mainImageUrl: fav.imageUrl || "",
-                  images: fav.imageUrl
-                    ? [{ id: 1, imageUrl: fav.imageUrl, isProductMain: true, isMain: true }]
-                    : [],
-                  colors: [],
-                  variants: [],
-                });
-              }
+          serverFavorites.forEach((fav: any) => {
+            const pid = String(fav.id || fav.productId);
+            map.set(pid, {
+              id: fav.id,
+              name: fav.name || "Favori Ürün",
+              slug: fav.slug || String(fav.id),
+              basePrice: fav.basePrice || 0,
+              discountPrice: fav.discountPrice,
+              mainImageUrl: fav.mainImageUrl || "",
+              categoryName: fav.categoryName,
+              brandName: fav.brandName,
+              inStock: fav.inStock ?? true,
+              totalStock: fav.totalStock,
+              images: fav.mainImageUrl
+                ? [{ id: 1, imageUrl: fav.mainImageUrl, isProductMain: true, isMain: true }]
+                : [],
+              variants: (fav.variants || []).map((v: any) => ({
+                id: v.variantId,
+                variantId: v.variantId,
+                sizeName: v.sizeName,
+                colorName: v.colorName,
+                stockQuantity: v.stockQuantity,
+              })),
             });
-
-            return Array.from(map.values());
           });
+
+          setItems(Array.from(map.values()));
         }
       } catch (err) {
         console.warn("Favoriler backend'den çekilemedi:", err);
@@ -167,7 +170,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     return () => {
       isMounted = false;
     };
-  }, [isAuthenticated, currentUserId]);
+  }, [isAuthenticated]);
 
   // 🌟 4. FAVORİLERE EKLEME (Optimistic UI + Backend PostgreSQL Kaydı) 🌟
   const addItem = useCallback(

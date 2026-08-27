@@ -1,34 +1,36 @@
-import type { Metadata } from "next";
-import { Truck, Clock, Shield, MapPin } from "lucide-react";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Kargo ve Teslimat",
-  description: "Haqan Wear kargo süreçleri, teslimat süreleri ve ücretleri hakkında bilgi edinin.",
-};
-
-const shippingOptions = [
-  {
-    name: "Standart Kargo",
-    duration: "2-4 İş Günü",
-    price: "Siparişe göre değişir",
-    info: "Yurt içi tüm illere teslimat.",
-  },
-  {
-    name: "Ücretsiz Kargo",
-    duration: "2-4 İş Günü",
-    price: "Ücretsiz",
-    info: "999 TL ve üzeri siparişlerde geçerlidir.",
-    highlight: true,
-  },
-  {
-    name: "Ekspres Kargo",
-    duration: "Ertesi İş Günü",
-    price: "Ayrıca ücretlendirilir",
-    info: "Saat 14:00'e kadar verilen siparişler için geçerlidir.",
-  },
-];
+import { Truck, Clock, Shield } from "lucide-react";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 export default function ShippingPage() {
+  const { data: settings } = useSiteSettings();
+
+  const threshold = settings?.freeshippingthreshold || settings?.freeShippingThreshold || "1500";
+  const flatRate = settings?.flatshippingrate || settings?.flatShippingRate || "79.90";
+
+  const shippingOptions = [
+    {
+      name: "Standart Kargo",
+      duration: "2-4 İş Günü",
+      price: `${flatRate} ₺`,
+      info: "Yurt içi tüm illere sabit ücretli teslimat.",
+    },
+    {
+      name: "Ücretsiz Kargo",
+      duration: "2-4 İş Günü",
+      price: "Ücretsiz",
+      info: `${threshold} TL ve üzeri tüm siparişlerde geçerlidir.`,
+      highlight: true,
+    },
+    {
+      name: "Ekspres Kargo",
+      duration: "Ertesi İş Günü",
+      price: "Özel Fiyat",
+      info: "Saat 14:00'e kadar verilen siparişler için geçerlidir.",
+    },
+  ];
+
   return (
     <main className="bg-[#F9F9FB]">
       {/* Header */}
@@ -44,12 +46,12 @@ export default function ShippingPage() {
         {/* Highlights */}
         <div className="grid sm:grid-cols-3 gap-6">
           {[
-            { icon: Truck, title: "Ücretsiz Kargo", desc: "999 TL ve üzeri siparişlerde" },
+            { icon: Truck, title: "Ücretsiz Kargo", desc: `${threshold} TL ve üzeri siparişlerde` },
             { icon: Clock, title: "Hızlı Teslimat", desc: "1-3 iş günü ortalama süre" },
             { icon: Shield, title: "Güvenli Paket", desc: "Hasara karşı korumalı ambalaj" },
           ].map((item) => (
-            <div key={item.title} className="bg-white border border-zinc-200 p-6 text-center">
-              <item.icon className="h-8 w-8 text-[#a3b899] mx-auto mb-3" />
+            <div key={item.title} className="bg-white border border-zinc-200 p-6 text-center rounded-xl">
+              <item.icon className="h-8 w-8 text-[#4A5D3E] mx-auto mb-3" />
               <h3 className="font-semibold text-zinc-900 mb-1">{item.title}</h3>
               <p className="text-zinc-500 text-sm">{item.desc}</p>
             </div>

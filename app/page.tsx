@@ -20,17 +20,21 @@ import {
   useFeaturedProducts,
   useNewArrivalProducts,
 } from "@/hooks/useProducts";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { getMinioUrl } from "@/lib/utils";
 
-const trustItems = [
-  { icon: Truck, label: "ÜCRETSİZ KARGO", sub: "999 TL ve üzeri" },
-  { icon: Clock, label: "HIZLI TESLİMAT", sub: "1-3 iş günü" },
-  { icon: RotateCcw, label: "KOLAY İADE", sub: "14 gün içinde" },
-  { icon: Shield, label: "GÜVENLİ ÖDEME", sub: "256 bit SSL" },
-  { icon: Headphones, label: "7/24 DESTEK", sub: "Her zaman yanınızda" },
-];
-
 export default function HomePage() {
+  const { data: settings } = useSiteSettings();
+  const threshold = settings?.freeshippingthreshold || settings?.freeShippingThreshold || "1500";
+
+  const trustItems = [
+    { icon: Truck, label: "ÜCRETSİZ KARGO", sub: `${threshold} TL ve üzeri` },
+    { icon: Clock, label: "HIZLI TESLİMAT", sub: "1-3 iş günü" },
+    { icon: RotateCcw, label: "KOLAY İADE", sub: "14 gün içinde" },
+    { icon: Shield, label: "GÜVENLİ ÖDEME", sub: "256 bit SSL" },
+    { icon: Headphones, label: "7/24 DESTEK", sub: "Her zaman yanınızda" },
+  ];
+
   const { data: rootCategoriesData, isLoading: isCategoriesLoading } = useCategories(true);
   const { data: allCategoriesData } = useCategories(false);
 
@@ -41,9 +45,9 @@ export default function HomePage() {
   const { data: allProductsData } = useProducts({ take: 8 });
 
   const categories =
-    rootCategoriesData && rootCategoriesData.length > 0
-      ? rootCategoriesData
-      : allCategoriesData || [];
+    (allCategoriesData && allCategoriesData.length > 0)
+      ? allCategoriesData.filter((c) => !c.parentCategoryId || Number(c.parentCategoryId) === 0)
+      : (rootCategoriesData || []).filter((c) => !c.parentCategoryId || Number(c.parentCategoryId) === 0);
 
   const allProducts = allProductsData?.data || [];
 

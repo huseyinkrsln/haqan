@@ -232,6 +232,10 @@ export interface Coupon extends BaseEntity {
   minOrderAmount: number;
   startDate: string;
   endDate: string;
+  isShowcase?: boolean;
+  usageLimit?: number | null;
+  usageCount?: number;
+  isSingleUsePerUser?: boolean;
 }
 
 // ─── Pagination ──────────────────────────────────────────────────────────────

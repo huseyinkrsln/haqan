@@ -6,28 +6,32 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Heart, ArrowUpDown, ArrowRight, Truck, Clock, RotateCcw, Shield, Headphones, Check } from "lucide-react";
 import { useWishlist } from "@/context/WishlistContext";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 import FavoriteProductCard from "@/components/product/FavoriteProductCard";
 import AuthRequiredView from "@/components/auth/AuthRequiredView";
 
 const sortOptions = [
-  { label: "En Yeni", value: "en-yeni" },
+  { label: "En Yeniler", value: "en-yeni" },
   { label: "Fiyat (Artan)", value: "fiyat-artan" },
   { label: "Fiyat (Azalan)", value: "fiyat-azalan" },
   { label: "İsim (A-Z)", value: "isim-a-z" },
   { label: "İsim (Z-A)", value: "isim-z-a" },
 ];
 
-const trustItems = [
-  { icon: Truck, label: "ÜCRETSİZ KARGO", sub: "999 TL ve üzeri" },
-  { icon: Clock, label: "HIZLI TESLİMAT", sub: "1-3 iş günü" },
-  { icon: RotateCcw, label: "KOLAY İADE", sub: "14 gün içinde" },
-  { icon: Shield, label: "GÜVENLİ ÖDEME", sub: "256 bit SSL" },
-  { icon: Headphones, label: "7/24 DESTEK", sub: "Her zaman yanınızda" },
-];
-
 export default function FavorilerPage() {
   const { data: session, status } = useSession();
   const { items, totalItems } = useWishlist();
+  const { data: settings } = useSiteSettings();
+  const threshold = settings?.freeshippingthreshold || settings?.freeShippingThreshold || "1500";
+
+  const trustItems = [
+    { icon: Truck, label: "ÜCRETSİZ KARGO", sub: `${threshold} TL ve üzeri` },
+    { icon: Clock, label: "HIZLI TESLİMAT", sub: "1-3 iş günü" },
+    { icon: RotateCcw, label: "KOLAY İADE", sub: "14 gün içinde" },
+    { icon: Shield, label: "GÜVENLİ ÖDEME", sub: "256 bit SSL" },
+    { icon: Headphones, label: "7/24 DESTEK", sub: "Her zaman yanınızda" },
+  ];
+
   const router = useRouter();
   const searchParams = useSearchParams();
 

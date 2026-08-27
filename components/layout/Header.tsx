@@ -22,6 +22,7 @@ import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useCategories } from "@/hooks/useCategories";
 import { useProducts } from "@/hooks/useProducts";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { getMinioUrl, formatPrice } from "@/lib/utils";
 
 export default function Header() {
@@ -30,6 +31,12 @@ export default function Header() {
   const { data: session } = useSession();
   const { totalItems } = useCart();
   const { totalItems: wishlistCount } = useWishlist();
+
+  // Site Ayarları
+  const { data: siteSettings } = useSiteSettings();
+  const siteTitle = siteSettings?.sitetitle || siteSettings?.siteTitle || "HAQAN WEAR";
+  const siteSlogan = siteSettings?.siteslogan || siteSettings?.siteSlogan || "PREMİUM ERKEK GİYİM";
+  const logoUrl = siteSettings?.logourl || siteSettings?.logoUrl;
 
   // Kategoriler
   const { data: rootCategories } = useCategories(true);
@@ -66,10 +73,10 @@ export default function Header() {
 
   const user = session?.user;
 
-  // Kök Departmanlar (ERKEK, KADIN, AKSESUAR, AYAKKABI)
-  const departments = (rootCategories && rootCategories.length > 0)
-    ? rootCategories
-    : (allCategories || []).filter((c) => !c.parentCategoryId || Number(c.parentCategoryId) === 0);
+  // Kök Departmanlar (Sadece ParentCategoryId'si null veya 0 olanlar: ERKEK, KADIN, AKSESUAR)
+  const departments = (allCategories || []).length > 0
+    ? (allCategories || []).filter((c) => !c.parentCategoryId || Number(c.parentCategoryId) === 0)
+    : (rootCategories || []).filter((c) => !c.parentCategoryId || Number(c.parentCategoryId) === 0);
 
   return (
     <header className="bg-white border-b border-gray-100 sticky top-0 z-40">
@@ -78,14 +85,24 @@ export default function Header() {
         <div className="hidden md:flex items-center h-16 gap-8">
           {/* Logo */}
           <Link href="/" className="shrink-0">
-            <div className="flex flex-col leading-none">
-              <span className="font-serif text-2xl font-bold tracking-[0.15em] text-gray-900">
-                HAQAN
-              </span>
-              <span className="text-[9px] tracking-[0.4em] text-[#4A5D3E] font-medium uppercase ml-0.5">
-                WEAR
-              </span>
-            </div>
+            {logoUrl ? (
+              <img
+                src={getMinioUrl(logoUrl)}
+                alt={siteTitle}
+                className="h-9 w-auto max-w-[180px] object-contain"
+              />
+            ) : (
+              <div className="flex flex-col leading-none">
+                <span className="font-serif text-2xl font-bold tracking-[0.15em] text-gray-900">
+                  {siteTitle.toUpperCase()}
+                </span>
+                {siteSlogan && (
+                  <span className="text-[9px] tracking-[0.4em] text-[#4A5D3E] font-medium uppercase ml-0.5">
+                    {siteSlogan.toUpperCase()}
+                  </span>
+                )}
+              </div>
+            )}
           </Link>
 
           {/* ─── MODA DEPARTMAN MENÜSÜ (ERKEK | KADIN) ─── */}
@@ -140,12 +157,12 @@ export default function Header() {
                     )}
                   </Link>
 
-                  {/* 🌟 LÜKS & GENİŞ MEGA DROPDOWN PANELİ 🌟 */}
+                  {/* 🌟 LÜKS & KOMPAKT MEGA DROPDOWN PANELİ 🌟 */}
                   {isHovered && deptSubCats.length > 0 && (
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 w-[680px] bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-100 p-6 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                      <div className="grid grid-cols-12 gap-6">
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 w-[480px] bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-100 p-6 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="grid grid-cols-2 gap-6">
                         {/* 1. Kolon: Özel Seçimler */}
-                        <div className="col-span-4 space-y-4 border-r border-gray-100 pr-5">
+                        <div className="space-y-4 border-r border-gray-100 pr-5">
                           <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
                             Öne Çıkanlar
                           </p>
@@ -186,7 +203,7 @@ export default function Header() {
                         </div>
 
                         {/* 2. Kolon: Alt Kategoriler */}
-                        <div className="col-span-4 space-y-4">
+                        <div className="space-y-4">
                           <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
                             Kategoriler
                           </p>
@@ -202,30 +219,6 @@ export default function Header() {
                               </Link>
                             ))}
                           </div>
-                        </div>
-
-                        {/* 3. Kolon: Lüks Atelier Vitrin Kartı */}
-                        <div className="col-span-4 flex flex-col justify-between rounded-xl bg-[#FAF9F6] border border-[#4A5D3E]/15 p-4 transition-all hover:border-[#4A5D3E]/35">
-                          <div>
-                            <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#4A5D3E] block mb-1.5">
-                              HAQAN ATELIER
-                            </span>
-                            <h4 className="font-serif text-sm font-bold text-gray-900 leading-snug">
-                              Zamansız {dept.name} Tasarımları
-                            </h4>
-                            <p className="text-[11px] text-gray-500 mt-1.5 leading-relaxed">
-                              İtalyan dokular ve üstün işçilikle hazırlanan seçkin parçalar.
-                            </p>
-                          </div>
-
-                          <Link
-                            href={`/koleksiyon/${dept.slug}`}
-                            onClick={() => setActiveHoverDeptId(null)}
-                            className="inline-flex items-center justify-between text-[11px] font-bold text-[#4A5D3E] hover:text-[#38472f] transition-colors pt-3 border-t border-gray-200/60 mt-3 group"
-                          >
-                            <span>Koleksiyonu İncele</span>
-                            <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
-                          </Link>
                         </div>
                       </div>
                     </div>
@@ -313,12 +306,24 @@ export default function Header() {
           </button>
 
           <Link href="/" className="flex flex-col items-center leading-none">
-            <span className="font-serif text-xl font-bold tracking-[0.15em] text-gray-900">
-              HAQAN
-            </span>
-            <span className="text-[8px] tracking-[0.35em] text-[#4A5D3E] font-medium uppercase">
-              WEAR
-            </span>
+            {logoUrl ? (
+              <img
+                src={getMinioUrl(logoUrl)}
+                alt={siteTitle}
+                className="h-7 w-auto max-w-[140px] object-contain"
+              />
+            ) : (
+              <>
+                <span className="font-serif text-lg font-bold tracking-[0.15em] text-gray-900">
+                  {siteTitle.toUpperCase()}
+                </span>
+                {siteSlogan && (
+                  <span className="text-[8px] tracking-[0.35em] text-[#4A5D3E] font-medium uppercase">
+                    {siteSlogan.toUpperCase()}
+                  </span>
+                )}
+              </>
+            )}
           </Link>
 
           <div className="flex items-center gap-2">

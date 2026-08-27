@@ -96,6 +96,7 @@ export default function HeroSlider() {
               fill
               className="object-cover opacity-75"
               priority={idx === 0}
+              loading={idx === 0 ? "eager" : "lazy"}
             />
             <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-transparent" />
             <div className="relative h-full flex items-center z-20">

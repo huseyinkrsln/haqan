@@ -36,17 +36,26 @@ export default function FavoriteProductCard({
       ? Math.round(((originalPrice - price) / originalPrice) * 100)
       : null;
 
-  // Sepette var mı kontrolü
-  const isAlreadyInCart = cartItems.some((i) => String(i.id) === String(product.id));
-
-  const inStockVariant = product.variants?.find((v: any) => (v.stockQuantity || 0) > 0);
-  const isOutOfStock = product.inStock === false || !inStockVariant;
+  // Stok durumu doğrudan backend tarafından hesaplanıp gönderilir
+  const isOutOfStock = product.inStock === false;
+  const hasVariants = Boolean(product.variants && product.variants.length > 1);
+  const inStockVariant = product.variants?.find((v: any) => (v.stockQuantity ?? 0) > 0);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     if (addedToCart || isOutOfStock) return;
 
-    const realVariantId = inStockVariant?.variantId || inStockVariant?.id || product.variants?.[0]?.variantId || product.variants?.[0]?.id;
+    // Eğer ürünün birden fazla beden/renk seçeneği varsa kullanıcıyı ürün detayına yönlendir
+    if (hasVariants) {
+      window.location.href = `/urun/${product.slug}`;
+      return;
+    }
+
+    const realVariantId =
+      inStockVariant?.variantId ||
+      inStockVariant?.id ||
+      product.variants?.[0]?.variantId ||
+      product.variants?.[0]?.id;
 
     addItem({
       id: String(product.id),
@@ -164,6 +173,11 @@ export default function FavoriteProductCard({
             </>
           ) : isOutOfStock ? (
             "TÜKENDİ"
+          ) : hasVariants && product.variants && product.variants.length > 1 ? (
+            <>
+              <ShoppingBag size={14} />
+              SEÇENEKLERİ GÖR
+            </>
           ) : (
             <>
               <ShoppingBag size={14} />

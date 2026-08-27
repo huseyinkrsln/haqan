@@ -78,6 +78,7 @@ export default function ProductImageGallery({
             className="object-cover group-hover:scale-105 transition-transform duration-500"
             sizes="(max-width: 1280px) 50vw, 600px"
             priority
+            loading="eager"
           />
         </div>
       </div>
@@ -93,6 +94,7 @@ export default function ProductImageGallery({
             className="object-cover"
             sizes="100vw"
             priority
+            loading="eager"
           />
           {validImages.length > 1 && (
             <>
