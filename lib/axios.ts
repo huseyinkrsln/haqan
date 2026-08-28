@@ -1,14 +1,13 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import { getSession, signOut } from "next-auth/react";
 
-// Dinamik Backend URL Çözümleyici:
-// Tarayıcıdaysa (PC veya Mobil), istemcinin girdiği hostname'i (örn: 192.168.1.108 veya localhost) alarak port 5000'e yönlendirir.
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  process.env.BACKEND_URL ||
+  "http://localhost:5000";
+
 export function getBackendUrl(): string {
-  if (typeof window !== "undefined") {
-    const hostname = window.location.hostname;
-    return `http://${hostname}:5000`;
-  }
-  return process.env.NEXT_PUBLIC_BACKEND_URL || process.env.BACKEND_URL || "http://localhost:5000";
+  return BACKEND_URL;
 }
 
 export const axiosInstance = axios.create({

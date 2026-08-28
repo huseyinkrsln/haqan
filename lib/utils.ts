@@ -5,7 +5,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-const MINIO_URL = process.env.NEXT_PUBLIC_MINIO_URL || "http://192.168.1.108:9000";
+const MINIO_URL = process.env.NEXT_PUBLIC_MINIO_URL || "http://localhost:9000";
 
 export function getMinioUrl(path?: string | null): string {
   if (!path) return "";

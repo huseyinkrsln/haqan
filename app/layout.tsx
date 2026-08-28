@@ -14,7 +14,7 @@ import MaintenanceBanner from "@/components/layout/MaintenanceBanner";
 import DynamicFavicon from "@/components/layout/DynamicFavicon";
 import PromoPopupModal from "@/components/layout/PromoPopupModal";
 import { ToastProvider } from "@/context/ToastContext";
-import { cn } from "@/lib/utils";
+import { cn, getMinioUrl } from "@/lib/utils";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -33,9 +33,7 @@ const playfair = Playfair_Display({
 export async function generateMetadata(): Promise<Metadata> {
   try {
     const backendUrl =
-      process.env.NEXT_PUBLIC_BACKEND_URL ||
-      process.env.BACKEND_URL ||
-      "http://localhost:5000";
+      process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
     const res = await fetch(`${backendUrl}/api/SiteSettings/getpublicdictionary`, {
       next: { revalidate: 60 },
@@ -68,12 +66,7 @@ export async function generateMetadata(): Promise<Metadata> {
       .filter(Boolean);
 
     const faviconUrl = settings["faviconurl"];
-    const minioBase = process.env.NEXT_PUBLIC_MINIO_URL || "http://127.0.0.1:9000";
-    const fullFavicon = faviconUrl
-      ? faviconUrl.startsWith("http")
-        ? faviconUrl
-        : `${minioBase}/${faviconUrl.replace(/^\/+/, "")}`
-      : undefined;
+    const fullFavicon = faviconUrl ? getMinioUrl(faviconUrl) : undefined;
 
     return {
       title: {
