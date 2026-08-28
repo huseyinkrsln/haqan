@@ -61,7 +61,7 @@ h6 {
 .animate-marquee {
   display: flex;
   width: max-content;
-  animation: marquee 28s linear infinite;
+  animation: marquee 70s linear infinite;
 }
 
 .animate-marquee:hover {
