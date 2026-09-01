@@ -16,6 +16,7 @@ export interface Category extends BaseEntity {
   imageUrl2?: string;
   parentCategoryId?: number;
   subCategories?: Category[];
+  sizeGroupId?: number;
 }
 
 export interface ProductGroup extends BaseEntity {
@@ -37,6 +38,18 @@ export interface Color extends BaseEntity {
 export interface Size extends BaseEntity {
   name: string;
   displayOrder?: number;
+  sizeGroupId?: number;
+}
+
+export interface SizeLookupDto {
+  id: number;
+  name: string;
+}
+
+export interface SizeGroupWithSizesLookupDto {
+  id: number;
+  name: string;
+  sizes: SizeLookupDto[];
 }
 
 export interface Brand extends BaseEntity {

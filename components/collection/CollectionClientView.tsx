@@ -17,7 +17,7 @@ import {
 import { useCategories } from "@/hooks/useCategories";
 import { useProductGroups } from "@/hooks/useProductGroups";
 import { useProducts } from "@/hooks/useProducts";
-import { useBrands } from "@/hooks/useFilters";
+import { useBrands, useSizeGroupsWithSizesLookup } from "@/hooks/useFilters";
 import ProductCard from "@/components/product/ProductCard";
 import { Category, Product } from "@/types/api.types";
 
@@ -136,21 +136,50 @@ export default function CollectionClientView({
   // Bu kategoriye ait Ürün Grupları / Modeller
   const { data: productGroups } = useProductGroups(activeCategoryId);
 
+  // 🌟 Kategoriye / Koleksiyona Göre Beden Lookup'ı 🌟
+  // Kategori seçiliyse o kategorinin SizeGroup'una ait bedenler, atanmamışsa veya genel sayfadaysa tüm bedenler döner
+  const { data: sizeGroupsWithSizes } = useSizeGroupsWithSizesLookup(activeCategoryId);
+  const { data: allSizeGroupsWithSizes } = useSizeGroupsWithSizesLookup();
+
+  const activeSizeGroups = (sizeGroupsWithSizes && sizeGroupsWithSizes.length > 0)
+    ? sizeGroupsWithSizes
+    : (allSizeGroupsWithSizes || []);
+
+  const availableSizes = useMemo(() => {
+    if (!activeSizeGroups || activeSizeGroups.length === 0) return [];
+    const list: { id: number; name: string; groupName?: string }[] = [];
+    const seen = new Set<number>();
+    activeSizeGroups.forEach((group) => {
+      group.sizes?.forEach((s) => {
+        if (!seen.has(s.id)) {
+          seen.add(s.id);
+          list.push({ id: s.id, name: s.name, groupName: group.name });
+        }
+      });
+    });
+    return list;
+  }, [activeSizeGroups]);
+
   // Filtre State'leri
   const [selectedProductGroupId, setSelectedProductGroupId] = useState<number | undefined>(undefined);
   const [selectedBrandId, setSelectedBrandId] = useState<number | undefined>(undefined);
+  const [selectedSizeId, setSelectedSizeId] = useState<number | undefined>(undefined);
   const [selectedSort, setSelectedSort] = useState(sortOptions[0]);
   const [sortOpen, setSortOpen] = useState(false);
 
-  // Marka Arama State'leri
+  // Marka & Beden Arama/Dropdown State'leri
   const [brandDropdownOpen, setBrandDropdownOpen] = useState(false);
   const [brandSearchQuery, setBrandSearchQuery] = useState("");
+  const [sizeDropdownOpen, setSizeDropdownOpen] = useState(false);
+
   const brandDropdownRef = useRef<HTMLDivElement>(null);
+  const sizeDropdownRef = useRef<HTMLDivElement>(null);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Departman veya Kategori değiştikçe model seçimini sıfırla
+  // Departman veya Kategori değiştikçe model ve beden seçimini sıfırla
   useEffect(() => {
     setSelectedProductGroupId(undefined);
+    setSelectedSizeId(undefined);
   }, [slug, selectedSpecialDepartmentId, selectedSpecialSubCategoryId]);
 
   // Dışarı tıklandığında dropdownları kapat
@@ -161,6 +190,12 @@ export default function CollectionClientView({
         !brandDropdownRef.current.contains(event.target as Node)
       ) {
         setBrandDropdownOpen(false);
+      }
+      if (
+        sizeDropdownRef.current &&
+        !sizeDropdownRef.current.contains(event.target as Node)
+      ) {
+        setSizeDropdownOpen(false);
       }
       if (
         sortDropdownRef.current &&
@@ -184,12 +219,14 @@ export default function CollectionClientView({
   }, [brandsData, brandSearchQuery]);
 
   const selectedBrand = brandsData?.find((b) => b.id === selectedBrandId);
+  const selectedSize = availableSizes.find((s) => s.id === selectedSizeId);
 
   // Ürünleri Çek
   const { data: productsData, isLoading: isProductsLoading } = useProducts({
     categoryId: activeCategoryId,
     productGroupId: selectedProductGroupId,
     brandId: selectedBrandId,
+    sizeId: selectedSizeId,
     isBestSeller: effectiveIsBestSeller,
     isFeatured: effectiveIsFeatured,
     isNewArrival: effectiveIsNewArrival,
@@ -334,7 +371,7 @@ export default function CollectionClientView({
               </button>
 
               {brandDropdownOpen && (
-                <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-1.5 bg-white border border-gray-100 rounded-2xl shadow-xl p-3 z-50 w-[calc(100vw-32px)] max-w-xs sm:w-64 animate-in fade-in slide-in-from-top-1 duration-150">
+                <div className="absolute left-0 sm:left-0 top-full mt-1.5 bg-white border border-gray-100 rounded-2xl shadow-xl p-3 z-50 w-64 max-w-[calc(100vw-32px)] animate-in fade-in slide-in-from-top-1 duration-150">
                   <div className="relative mb-2">
                     <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
@@ -393,6 +430,121 @@ export default function CollectionClientView({
                 </div>
               )}
             </div>
+
+            {/* Beden Filtresi */}
+            {availableSizes.length > 0 && (
+              <div className="relative flex-1 sm:flex-initial" ref={sizeDropdownRef}>
+                <button
+                  onClick={() => setSizeDropdownOpen(!sizeDropdownOpen)}
+                  className={`w-full sm:w-auto flex items-center justify-between sm:justify-start gap-1.5 text-xs font-medium px-3 py-2 rounded-xl transition-all border shadow-2xs cursor-pointer ${
+                    selectedSizeId
+                      ? "bg-[#4A5D3E] text-white border-[#4A5D3E]"
+                      : "bg-white text-gray-700 border-gray-200 hover:border-gray-400"
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 truncate">
+                    <span className="text-[11px]">📏</span>
+                    <span className="truncate max-w-[110px] sm:max-w-none">
+                      {selectedSize ? `Beden: ${selectedSize.name}` : "Bedenler"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {selectedSizeId && (
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedSizeId(undefined);
+                        }}
+                        className="hover:bg-white/20 p-0.5 rounded-full cursor-pointer inline-flex items-center justify-center"
+                        title="Kaldır"
+                      >
+                        <X size={12} />
+                      </span>
+                    )}
+                    <ChevronDown size={13} className={selectedSizeId ? "text-white" : "text-gray-400"} />
+                  </div>
+                </button>
+
+                {sizeDropdownOpen && (
+                  <div className="absolute left-1/2 -translate-x-1/2 sm:left-auto sm:right-0 sm:translate-x-0 top-full mt-1.5 bg-white border border-gray-100 rounded-2xl shadow-xl p-3 z-50 w-64 max-w-[calc(100vw-32px)] animate-in fade-in slide-in-from-top-1 duration-150">
+                    <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-gray-100">
+                      <span className="text-xs font-semibold text-gray-900">Beden Seçiniz</span>
+                      {selectedSizeId && (
+                        <button
+                          onClick={() => {
+                            setSelectedSizeId(undefined);
+                            setSizeDropdownOpen(false);
+                          }}
+                          className="text-[11px] text-rose-600 hover:underline cursor-pointer"
+                        >
+                          Temizle
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="max-h-56 overflow-y-auto space-y-2.5 pr-1">
+                      {activeSizeGroups && activeSizeGroups.length > 1 ? (
+                        activeSizeGroups.map((group) => {
+                          if (!group.sizes || group.sizes.length === 0) return null;
+                          return (
+                            <div key={group.id} className="space-y-1.5">
+                              <div className="text-[10px] font-bold tracking-wider uppercase text-gray-400">
+                                {group.name}
+                              </div>
+                              <div className="grid grid-cols-4 gap-1.5">
+                                {group.sizes.map((s) => {
+                                  const isSelected = selectedSizeId === s.id;
+                                  return (
+                                    <button
+                                      key={s.id}
+                                      onClick={() => {
+                                        setSelectedSizeId(isSelected ? undefined : s.id);
+                                        setSizeDropdownOpen(false);
+                                      }}
+                                      className={`py-1.5 text-xs font-medium rounded-lg border transition-all cursor-pointer text-center ${
+                                        isSelected
+                                          ? "bg-[#4A5D3E] text-white border-[#4A5D3E] font-bold shadow-2xs"
+                                          : "bg-gray-50/80 text-gray-700 border-gray-200 hover:border-gray-400 hover:bg-white"
+                                      }`}
+                                    >
+                                      {s.name}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {availableSizes.map((s) => {
+                            const isSelected = selectedSizeId === s.id;
+                            return (
+                              <button
+                                key={s.id}
+                                onClick={() => {
+                                  setSelectedSizeId(isSelected ? undefined : s.id);
+                                  setSizeDropdownOpen(false);
+                                }}
+                                className={`py-1.5 text-xs font-medium rounded-lg border transition-all cursor-pointer text-center ${
+                                  isSelected
+                                    ? "bg-[#4A5D3E] text-white border-[#4A5D3E] font-bold shadow-2xs"
+                                    : "bg-gray-50/80 text-gray-700 border-gray-200 hover:border-gray-400 hover:bg-white"
+                                }`}
+                              >
+                                {s.name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Sıralama Dropdown (Anlık Tetikleyici) */}
             <div className="relative flex-1 sm:flex-initial" ref={sortDropdownRef}>
@@ -602,6 +754,7 @@ export default function CollectionClientView({
                 setSelectedSpecialSubCategoryId(undefined);
                 setSelectedProductGroupId(undefined);
                 setSelectedBrandId(undefined);
+                setSelectedSizeId(undefined);
               }}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gray-900 text-white text-xs font-semibold hover:bg-black transition-colors cursor-pointer"
             >

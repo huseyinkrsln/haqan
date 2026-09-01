@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { axiosInstance } from "@/lib/axios";
-import { ProductGroup, Brand, Color, Size } from "@/types/api.types";
+import { ProductGroup, Brand, Color, Size, SizeGroupWithSizesLookupDto } from "@/types/api.types";
 
 export function useProductGroups(categoryId?: number) {
   return useQuery<ProductGroup[]>({
@@ -41,6 +41,20 @@ export function useSizes() {
     queryFn: async () => {
       const res = await axiosInstance.get("/api/sizes/getall");
       return Array.isArray(res.data) ? res.data : (res.data as any)?.data || [];
+    },
+  });
+}
+
+export function useSizeGroupsWithSizesLookup(categoryId?: number) {
+  return useQuery<SizeGroupWithSizesLookupDto[]>({
+    queryKey: ["sizegroups-with-sizes-lookup", categoryId],
+    queryFn: async () => {
+      const url = categoryId
+        ? `/api/sizegroups/getallwithsizeslookup?categoryId=${categoryId}`
+        : "/api/sizegroups/getallwithsizeslookup";
+      const res = await axiosInstance.get(url);
+      const raw = res.data;
+      return Array.isArray(raw) ? raw : (raw as any)?.data || [];
     },
   });
 }
