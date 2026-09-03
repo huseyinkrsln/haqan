@@ -13,6 +13,7 @@ import WhatsAppButton from "@/components/layout/WhatsAppButton";
 import MaintenanceBanner from "@/components/layout/MaintenanceBanner";
 import DynamicFavicon from "@/components/layout/DynamicFavicon";
 import PromoPopupModal from "@/components/layout/PromoPopupModal";
+import CookieConsentBanner from "@/components/layout/CookieConsentBanner";
 import { ToastProvider } from "@/context/ToastContext";
 import { cn, getMinioUrl } from "@/lib/utils";
 
@@ -75,13 +76,24 @@ export async function generateMetadata(): Promise<Metadata> {
       },
       description: metaDescription,
       keywords: keywords,
+      manifest: "/manifest.json",
+      themeColor: "#09090b",
+      appleWebApp: {
+        capable: true,
+        statusBarStyle: "black-translucent",
+        title: siteTitle,
+      },
       icons: fullFavicon
         ? {
             icon: fullFavicon,
             shortcut: fullFavicon,
-            apple: fullFavicon,
+            apple: "/icons/apple-touch-icon.png",
           }
-        : undefined,
+        : {
+            icon: "/icons/favicon-32x32.png",
+            shortcut: "/icons/favicon-16x16.png",
+            apple: "/icons/apple-touch-icon.png",
+          },
       openGraph: {
         title: `${siteTitle} — ${siteSlogan}`,
         description: metaDescription,
@@ -98,6 +110,18 @@ export async function generateMetadata(): Promise<Metadata> {
       },
       description:
         "Zamansız tasarımlar ve premium kumaşlarla giyimde yeni standartlar. Takım elbise, gömlek, elbise, pantolon, ayakkabı ve aksesuar.",
+      manifest: "/manifest.json",
+      themeColor: "#09090b",
+      appleWebApp: {
+        capable: true,
+        statusBarStyle: "black-translucent",
+        title: "HAQAN WEAR",
+      },
+      icons: {
+        icon: "/icons/favicon-32x32.png",
+        shortcut: "/icons/favicon-16x16.png",
+        apple: "/icons/apple-touch-icon.png",
+      },
       keywords: [
         "erkek giyim",
         "kadın giyim",
@@ -110,6 +134,8 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
+import PwaRegister from "@/components/providers/PwaRegister";
+
 export default function RootLayout({
   children,
 }: {
@@ -121,7 +147,19 @@ export default function RootLayout({
       className={cn(inter.variable, playfair.variable, "font-sans", geist.variable)}
       data-scroll-behavior="smooth"
     >
+      <head>
+        <meta name="application-name" content="HAQAN WEAR" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="HAQAN WEAR" />
+        <meta name="format-detection" content="telephone=no" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="theme-color" content="#09090b" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+      </head>
       <body className="min-h-screen bg-[#F9F9FB] font-sans antialiased">
+        <PwaRegister />
         <QueryProvider>
           <ToastProvider>
             <DynamicFavicon />
@@ -131,11 +169,12 @@ export default function RootLayout({
                 <MaintenanceBanner />
                 <AnnouncementBar />
                 <Header />
-                <main className="pb-20 md:pb-0">{children}</main>
+                <main className="pb-28 md:pb-0">{children}</main>
                 <Footer />
                 <StickyCouponBar />
                 <WhatsAppButton />
                 <MobileBottomNav />
+                <CookieConsentBanner />
               </WishlistProvider>
             </CartProvider>
           </ToastProvider>

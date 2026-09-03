@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Truck, Zap, CreditCard, Lock, ChevronRight } from "lucide-react";
 import { useCart } from "@/context/CartContext";
@@ -37,6 +38,7 @@ export default function CheckoutForm({
     cvv: "",
     cardName: "",
   });
+  const [acceptTerms, setAcceptTerms] = useState(true);
 
   const formatCardNumber = (val: string) =>
     val
@@ -208,12 +210,27 @@ export default function CheckoutForm({
 
   return (
     <div className="space-y-4">
-      <h2 className="font-serif text-xl font-bold text-gray-900">Ödeme Bilgileri</h2>
-      <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 flex items-center gap-2">
-        <Lock size={14} className="text-green-600 shrink-0" />
-        <span className="text-xs text-green-700 font-medium">
-          256-bit SSL şifreleme ile güvenli ödeme
-        </span>
+      <div className="flex items-center justify-between gap-2 pb-1 border-b border-gray-100">
+        <h2 className="font-serif text-xl font-bold text-gray-900">Ödeme Bilgileri</h2>
+        <img
+          src="/images/payment/iyzico_ile_ode_colored_horizontal.svg"
+          alt="iyzico ile Öde"
+          className="h-6 w-auto"
+        />
+      </div>
+
+      <div className="bg-emerald-50/60 border border-emerald-200/70 rounded-xl px-4 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Lock size={14} className="text-emerald-600 shrink-0" />
+          <span className="text-xs text-emerald-800 font-medium">
+            256-Bit SSL & 3D Secure ile %100 Güvenli Ödeme
+          </span>
+        </div>
+        <img
+          src="/images/payment/iyzico_logo_band_colored.svg"
+          alt="Visa, MasterCard, Troy, iyzico"
+          className="h-4 sm:h-5 w-auto"
+        />
       </div>
       <div>
         <label className={labelCls}>Kart Numarası</label>
@@ -272,16 +289,40 @@ export default function CheckoutForm({
           />
         </div>
       </div>
+
+      {/* 🌟 MESAFELİ SATIŞ SÖZLEŞMESİ ONAY KUTUSU (iyzico ZORUNLU ŞARTI) 🌟 */}
+      <div className="pt-2 pb-1">
+        <label className="flex items-start gap-2.5 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={acceptTerms}
+            onChange={(e) => setAcceptTerms(e.target.checked)}
+            className="mt-0.5 w-4 h-4 rounded border-gray-300 text-[#4A5D3E] focus:ring-[#4A5D3E] accent-[#4A5D3E] cursor-pointer"
+          />
+          <span className="text-xs text-gray-600 leading-snug">
+            <Link href="/terms" target="_blank" className="text-gray-900 font-semibold underline hover:text-[#4A5D3E]">
+              Mesafeli Satış Sözleşmesi
+            </Link>
+            {"'ni ve "}
+            <Link href="/terms" target="_blank" className="text-gray-900 font-semibold underline hover:text-[#4A5D3E]">
+              Ön Bilgilendirme Formu
+            </Link>
+            {"'nu okudum, kabul ediyorum."}
+          </span>
+        </label>
+      </div>
+
       <div className="flex gap-3">
         <button
           onClick={() => onStepChange(2)}
-          className="flex-1 py-3.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+          className="flex-1 py-3.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer"
         >
           Geri
         </button>
         <button
           onClick={handleSubmit}
-          className="flex-1 flex items-center justify-center gap-2 bg-[#4A5D3E] hover:bg-[#3A4B30] text-white font-semibold py-3.5 rounded-xl transition-colors"
+          disabled={!acceptTerms}
+          className="flex-1 flex items-center justify-center gap-2 bg-[#4A5D3E] hover:bg-[#3A4B30] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl transition-colors cursor-pointer"
         >
           <Lock size={14} /> GÜVENLİ ÖDE
         </button>

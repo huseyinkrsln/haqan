@@ -162,7 +162,7 @@ export default function StickyCouponBar() {
   return (
     <aside
       aria-label="İndirim Kuponu"
-      className="fixed bottom-16 sm:bottom-6 left-3 right-3 sm:left-1/2 sm:-translate-x-1/2 sm:w-auto z-40 animate-in fade-in slide-in-from-bottom-3 duration-300 pointer-events-auto flex justify-center"
+      className="fixed bottom-[70px] sm:bottom-6 left-3 right-3 sm:left-1/2 sm:-translate-x-1/2 sm:w-auto z-40 animate-in fade-in slide-in-from-bottom-3 duration-300 pointer-events-auto flex justify-center"
     >
       <div className="w-full sm:w-auto bg-[#121316]/95 backdrop-blur-xl text-white px-3.5 py-2 sm:px-4.5 sm:py-2.5 rounded-full shadow-[0_12px_36px_rgba(0,0,0,0.3)] border border-white/12 ring-1 ring-white/5 flex items-center justify-between sm:justify-start gap-3 sm:gap-4 transition-all hover:border-white/20">
         {/* İkon & Açıklama */}

@@ -1,0 +1,65 @@
+{
+  "name": "HAQAN WEAR | Premium Erkek Giyim",
+  "short_name": "HAQAN WEAR",
+  "description": "Premium erkek giyiminde zamansız tasarımlar, üstün kalite kumaşlar ve usta işçilik.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#09090b",
+  "orientation": "portrait",
+  "categories": ["shopping", "lifestyle", "fashion"],
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Tüm Koleksiyon",
+      "short_name": "Koleksiyon",
+      "description": "Yeni sezon ürünleri ve koleksiyonu keşfedin",
+      "url": "/koleksiyon/tum-koleksiyon",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Siparişlerim",
+      "short_name": "Siparişler",
+      "description": "Sipariş geçmişinizi inceleyin",
+      "url": "/profilim?tab=orders",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Favorilerim",
+      "short_name": "Favoriler",
+      "description": "Beğendiğiniz ürünlere göz atın",
+      "url": "/favoriler",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    }
+  ]
+}

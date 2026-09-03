@@ -246,6 +246,19 @@ export default function CartSummary({
           <ChevronRight size={16} />
         </button>
       )}
+
+      {/* Güvenli Ödeme ve Kart Logoları */}
+      <div className="pt-3 border-t border-gray-100 flex flex-col items-center gap-2">
+        <div className="flex items-center gap-1.5 text-[11px] text-gray-500 font-medium">
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+          <span>256-Bit SSL & 3D Secure ile Güvenli Alışveriş</span>
+        </div>
+        <img
+          src="/images/payment/iyzico_logo_band_colored.svg"
+          alt="iyzico, Visa, MasterCard, Troy"
+          className="h-4 sm:h-5 w-auto opacity-80 hover:opacity-100 transition-opacity"
+        />
+      </div>
     </div>
   );
 }

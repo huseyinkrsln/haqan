@@ -40,7 +40,7 @@ export default function MobileBottomNav() {
   const { totalItems: wishlistCount } = useWishlist();
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-100/90 safe-area-pb shadow-lg">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-t border-gray-200/80 safe-area-pb shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
       <div className="grid grid-cols-5 h-15">
         {navItems.map(({ href, label, icon: Icon }) => {
           const isActive =

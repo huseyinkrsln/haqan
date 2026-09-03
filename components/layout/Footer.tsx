@@ -13,13 +13,14 @@ const footerLinks = {
   ],
   support: [
     { name: "Sıkça Sorulan Sorular", href: "/faq" },
-    { name: "Kargo ve Teslimat", href: "/shipping" },
-    { name: "İade ve Değişim", href: "/returns" },
+    { name: "Kargo ve Teslimat Şartları", href: "/shipping" },
+    { name: "İade ve Değişim Şartları", href: "/returns" },
     { name: "Sipariş Takibi", href: "/track-order" },
   ],
   legal: [
-    { name: "Gizlilik Politikası", href: "/privacy" },
-    { name: "Kullanım Şartları", href: "/terms" },
+    { name: "Gizlilik Sözleşmesi", href: "/privacy" },
+    { name: "Mesafeli Satış Sözleşmesi", href: "/terms" },
+    { name: "Teslimat ve İade Şartları", href: "/shipping" },
     { name: "KVKK Aydınlatma Metni", href: "/kvkk" },
     { name: "Çerez Politikası", href: "/cookies" },
   ],
@@ -55,9 +56,9 @@ export default function Footer() {
     settings?.metaDescription ||
     "Premium erkek giyiminde zamansız tasarımlar, üstün kalite kumaşlar ve usta işçilik. Stilinizi Haqan Wear ile yeniden tanımlayın.";
 
-  const phone = settings?.phonenumber || settings?.phoneNumber || "+90 (850) 123 45 67";
-  const email = settings?.emailaddress || settings?.emailAddress || "destek@haqanwear.com";
-  const address = settings?.storeaddress || settings?.storeAddress || "Nişantaşı, Şişli / İstanbul";
+  const phone = settings?.phonenumber || settings?.phoneNumber || "0531 714 66 27";
+  const email = settings?.emailaddress || settings?.emailAddress || "hakanyesildag91@gmail.com";
+  const address = settings?.storeaddress || settings?.storeAddress || "Zülüflühan Mah. Eski İskenderun Yolu Cad. No: 55 B, Antakya / Hatay";
   const workingHours = settings?.workinghours || settings?.workingHours;
 
   const instagram = settings?.instagramurl || settings?.instagramUrl;
@@ -190,10 +191,31 @@ export default function Footer() {
           </div>
         </div>
 
+        {/* ─── 🌟 GÜVENLİ ÖDEME VE İYZİCO LOGO BANTI 🌟 ─── */}
+        <div className="pt-8 pb-6 border-t border-zinc-900 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-zinc-400 font-medium">Güvenli Ödeme Altyapısı:</span>
+            <div className="bg-zinc-900/80 border border-zinc-800/80 px-3 py-1.5 rounded-lg flex items-center gap-2">
+              <span className="text-[11px] font-semibold text-zinc-300">256-Bit SSL</span>
+              <span className="text-zinc-600">|</span>
+              <span className="text-[11px] font-semibold text-zinc-300">3D Secure</span>
+            </div>
+          </div>
+
+          {/* iyzico Resmi Logo Bandı (iyzico + Visa + Mastercard + Troy) */}
+          <div className="flex items-center justify-center">
+            <img
+              src="/images/payment/iyzico_logo_band_white.svg"
+              alt="iyzico, Visa, MasterCard, Troy ile Güvenli Ödeme"
+              className="h-6 sm:h-7 w-auto max-w-[320px] sm:max-w-none opacity-90 hover:opacity-100 transition-opacity"
+            />
+          </div>
+        </div>
+
         {/* Bottom Section */}
-        <div className="flex flex-col md:flex-row items-center justify-between pt-8 border-t border-zinc-800 text-xs text-zinc-500">
+        <div className="flex flex-col md:flex-row items-center justify-between pt-6 border-t border-zinc-900 text-xs text-zinc-500 gap-4">
           <p>© {new Date().getFullYear()} Haqan Wear. Tüm hakları saklıdır.</p>
-          <ul className="flex flex-wrap gap-4 mt-4 md:mt-0">
+          <ul className="flex flex-wrap items-center justify-center gap-4">
             {footerLinks.legal.map((link) => (
               <li key={link.name}>
                 <Link href={link.href} className="hover:text-white transition-colors">

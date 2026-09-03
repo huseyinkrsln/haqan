@@ -224,22 +224,20 @@ export default function ProductCard({
             </div>
           )}
 
-          {/* Beden Seçenekleri */}
+          {/* Beden Seçenekleri (Tümü Açık, Kalın & Kurumsal Ayırıcı) */}
           {sizes && sizes.length > 0 && (
-            <div className="flex items-center gap-1 mt-2 overflow-hidden flex-wrap">
-              {sizes.slice(0, 4).map((s: string) => (
+            <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+              {sizes.map((s: string, idx: number) => (
                 <span
                   key={s}
-                  className="text-[8px] sm:text-[9px] font-semibold text-gray-600 bg-gray-100/90 border border-gray-200/50 px-1.5 py-0.5 rounded-md"
+                  className="inline-flex items-center text-[10px] sm:text-[11px] font-bold text-gray-800 tracking-wider"
                 >
-                  {s}
+                  <span>{s}</span>
+                  {idx < sizes.length - 1 && (
+                    <span className="text-gray-300 font-light ml-1.5 select-none">·</span>
+                  )}
                 </span>
               ))}
-              {sizes.length > 4 && (
-                <span className="text-[8px] sm:text-[9px] text-gray-400 font-medium">
-                  +{sizes.length - 4}
-                </span>
-              )}
             </div>
           )}
         </div>

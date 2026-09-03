@@ -299,8 +299,8 @@ export default function CollectionClientView({
     : `${activeDepartment?.name || "Koleksiyon"}`;
 
   return (
-    <div className="bg-[#FAF9F6]/40 min-h-screen pb-20 md:pb-10">
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 sm:py-6 md:py-8">
+    <div className="bg-[#FAF9F6]/40 min-h-screen pb-24 md:pb-10 w-full max-w-full">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 sm:py-6 md:py-8 w-full max-w-full">
         {/* ─── 1. BREADCRUMB ─── */}
         <nav className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-gray-400 mb-2 sm:mb-3">
           <Link href="/" className="hover:text-gray-900 transition-colors">Ana Sayfa</Link>
@@ -324,7 +324,7 @@ export default function CollectionClientView({
         </nav>
 
         {/* ─── 2. BAŞLIK VE FİLTRELEME ARAÇLARI ─── */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 mb-3 border-b border-gray-200/70">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 mb-3 border-b border-gray-200/70 w-full max-w-full">
           <div className="flex items-baseline gap-2.5">
             <h1 className="font-serif text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">
               {pageTitle}
@@ -334,24 +334,24 @@ export default function CollectionClientView({
             </span>
           </div>
 
-          <div className="flex items-center gap-2 self-start sm:self-auto w-full sm:w-auto">
+          <div className="grid grid-cols-3 gap-1.5 sm:flex sm:items-center sm:gap-2 w-full sm:w-auto">
             {/* Marka Filtresi */}
-            <div className="relative flex-1 sm:flex-initial" ref={brandDropdownRef}>
+            <div className="relative" ref={brandDropdownRef}>
               <button
                 onClick={() => setBrandDropdownOpen(!brandDropdownOpen)}
-                className={`w-full sm:w-auto flex items-center justify-between sm:justify-start gap-1.5 text-xs font-medium px-3 py-2 rounded-xl transition-all border shadow-2xs cursor-pointer ${
+                className={`w-full sm:w-auto flex items-center justify-between sm:justify-start gap-1 sm:gap-1.5 text-xs font-medium px-2.5 sm:px-3 py-2 rounded-xl transition-all border shadow-2xs cursor-pointer ${
                   selectedBrandId
                     ? "bg-[#4A5D3E] text-white border-[#4A5D3E]"
                     : "bg-white text-gray-700 border-gray-200 hover:border-gray-400"
                 }`}
               >
-                <div className="flex items-center gap-1.5 truncate">
-                  <Tag size={13} className={selectedBrandId ? "text-white" : "text-gray-400"} />
-                  <span className="truncate max-w-[110px] sm:max-w-none">
-                    {selectedBrand ? selectedBrand.name : "Markalar"}
+                <div className="flex items-center gap-1 sm:gap-1.5 truncate">
+                  <Tag size={12} className={`shrink-0 ${selectedBrandId ? "text-white" : "text-gray-400"}`} />
+                  <span className="truncate">
+                    {selectedBrand ? selectedBrand.name : <><span className="sm:hidden">Marka</span><span className="hidden sm:inline">Markalar</span></>}
                   </span>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
                   {selectedBrandId && (
                     <span
                       role="button"
@@ -363,15 +363,15 @@ export default function CollectionClientView({
                       className="hover:bg-white/20 p-0.5 rounded-full cursor-pointer inline-flex items-center justify-center"
                       title="Kaldır"
                     >
-                      <X size={12} />
+                      <X size={11} />
                     </span>
                   )}
-                  <ChevronDown size={13} className={selectedBrandId ? "text-white" : "text-gray-400"} />
+                  <ChevronDown size={12} className={selectedBrandId ? "text-white" : "text-gray-400"} />
                 </div>
               </button>
 
               {brandDropdownOpen && (
-                <div className="absolute left-0 sm:left-0 top-full mt-1.5 bg-white border border-gray-100 rounded-2xl shadow-xl p-3 z-50 w-64 max-w-[calc(100vw-32px)] animate-in fade-in slide-in-from-top-1 duration-150">
+                <div className="absolute left-0 top-full mt-1.5 bg-white border border-gray-100 rounded-2xl shadow-xl p-3 z-50 w-64 max-w-[calc(100vw-32px)] animate-in fade-in slide-in-from-top-1 duration-150">
                   <div className="relative mb-2">
                     <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
@@ -433,22 +433,22 @@ export default function CollectionClientView({
 
             {/* Beden Filtresi */}
             {availableSizes.length > 0 && (
-              <div className="relative flex-1 sm:flex-initial" ref={sizeDropdownRef}>
+              <div className="relative" ref={sizeDropdownRef}>
                 <button
                   onClick={() => setSizeDropdownOpen(!sizeDropdownOpen)}
-                  className={`w-full sm:w-auto flex items-center justify-between sm:justify-start gap-1.5 text-xs font-medium px-3 py-2 rounded-xl transition-all border shadow-2xs cursor-pointer ${
+                  className={`w-full sm:w-auto flex items-center justify-between sm:justify-start gap-1 sm:gap-1.5 text-xs font-medium px-2.5 sm:px-3 py-2 rounded-xl transition-all border shadow-2xs cursor-pointer ${
                     selectedSizeId
                       ? "bg-[#4A5D3E] text-white border-[#4A5D3E]"
                       : "bg-white text-gray-700 border-gray-200 hover:border-gray-400"
                   }`}
                 >
-                  <div className="flex items-center gap-1.5 truncate">
-                    <span className="text-[11px]">📏</span>
-                    <span className="truncate max-w-[110px] sm:max-w-none">
-                      {selectedSize ? `Beden: ${selectedSize.name}` : "Bedenler"}
+                  <div className="flex items-center gap-1 sm:gap-1.5 truncate">
+                    <span className="text-[11px] shrink-0">📏</span>
+                    <span className="truncate">
+                      {selectedSize ? selectedSize.name : <><span className="sm:hidden">Beden</span><span className="hidden sm:inline">Bedenler</span></>}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
                     {selectedSizeId && (
                       <span
                         role="button"
@@ -460,10 +460,10 @@ export default function CollectionClientView({
                         className="hover:bg-white/20 p-0.5 rounded-full cursor-pointer inline-flex items-center justify-center"
                         title="Kaldır"
                       >
-                        <X size={12} />
+                        <X size={11} />
                       </span>
                     )}
-                    <ChevronDown size={13} className={selectedSizeId ? "text-white" : "text-gray-400"} />
+                    <ChevronDown size={12} className={selectedSizeId ? "text-white" : "text-gray-400"} />
                   </div>
                 </button>
 
@@ -547,16 +547,19 @@ export default function CollectionClientView({
             )}
 
             {/* Sıralama Dropdown (Anlık Tetikleyici) */}
-            <div className="relative flex-1 sm:flex-initial" ref={sortDropdownRef}>
+            <div className="relative" ref={sortDropdownRef}>
               <button
                 onClick={() => setSortOpen(!sortOpen)}
-                className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 px-3 py-2 rounded-xl hover:border-gray-400 transition-colors shadow-2xs cursor-pointer"
+                className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-1 sm:gap-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 px-2.5 sm:px-3 py-2 rounded-xl hover:border-gray-400 transition-colors shadow-2xs cursor-pointer"
               >
-                <div className="flex items-center gap-1.5 truncate">
-                  <ArrowUpDown size={13} className="text-gray-400 shrink-0" />
-                  <span className="truncate max-w-[110px] sm:max-w-none">{selectedSort.label}</span>
+                <div className="flex items-center gap-1 sm:gap-1.5 truncate">
+                  <ArrowUpDown size={12} className="text-gray-400 shrink-0" />
+                  <span className="truncate">
+                    <span className="sm:hidden">Sırala</span>
+                    <span className="hidden sm:inline">{selectedSort.label}</span>
+                  </span>
                 </div>
-                <ChevronDown size={13} className="text-gray-400 shrink-0" />
+                <ChevronDown size={12} className="text-gray-400 shrink-0" />
               </button>
 
               {sortOpen && (
@@ -590,7 +593,7 @@ export default function CollectionClientView({
         {/* ─── 3. 🌟 HİYERARŞİK KATEGORİ & DEPARTMAN SEÇİMİ 🌟 ─── */}
         {/* Özel Koleksiyonlarda Departman (Erkek / Kadın / Tümü) Sekmeleri */}
         {specialConfig && rootCategories.length > 0 && (
-          <div className="mb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
+          <div className="mb-4 w-full max-w-full overflow-hidden">
             <div className="flex items-center gap-5 sm:gap-7 border-b border-gray-200/80 overflow-x-auto scrollbar-hide py-1">
               <button
                 onClick={() => {
@@ -630,7 +633,7 @@ export default function CollectionClientView({
 
         {/* Standart Kategorilerde Alt Kategori Sekmeleri */}
         {!specialConfig && subCategories.length > 0 && (
-          <div className="mb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
+          <div className="mb-4 w-full max-w-full overflow-hidden">
             <div className="flex items-center gap-5 sm:gap-7 border-b border-gray-200/80 overflow-x-auto scrollbar-hide py-1">
               <Link
                 href={`/koleksiyon/${activeDepartment?.slug}`}
@@ -664,7 +667,7 @@ export default function CollectionClientView({
 
         {/* Özel Koleksiyonda Bir Departman (Örn: Kadın) Seçildiğinde Çıkan Alt Kategoriler */}
         {specialConfig && selectedSpecialDepartmentId && subCategories.length > 0 && (
-          <div className="mb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
+          <div className="mb-4 w-full max-w-full overflow-hidden">
             <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
               <button
                 onClick={() => setSelectedSpecialSubCategoryId(undefined)}
@@ -732,7 +735,7 @@ export default function CollectionClientView({
 
         {/* ─── 5. ÜRÜN LİSTELEME GRID'İ ─── */}
         {isProductsLoading && sortedProducts.length === 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
               <div key={n} className="aspect-[3/4] bg-gray-200 animate-pulse rounded-2xl" />
             ))}
@@ -762,7 +765,7 @@ export default function CollectionClientView({
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {sortedProducts.map((product) => (
               <ProductCard
                 key={product.id}
