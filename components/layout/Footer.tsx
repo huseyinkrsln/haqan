@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Mail, Phone, MapPin, Clock } from "lucide-react";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { useCategories } from "@/hooks/useCategories";
@@ -13,16 +14,17 @@ const footerLinks = {
   ],
   support: [
     { name: "Sıkça Sorulan Sorular", href: "/faq" },
-    { name: "Kargo ve Teslimat Şartları", href: "/shipping" },
-    { name: "İade ve Değişim Şartları", href: "/returns" },
+    { name: "Kargo ve Teslimat", href: "/shipping" },
+    { name: "İptal, İade ve Değişim", href: "/returns" },
     { name: "Sipariş Takibi", href: "/track-order" },
   ],
   legal: [
     { name: "Gizlilik Sözleşmesi", href: "/privacy" },
     { name: "Mesafeli Satış Sözleşmesi", href: "/terms" },
-    { name: "Teslimat ve İade Şartları", href: "/shipping" },
+    { name: "İptal, İade ve Değişim Politikası", href: "/returns" },
     { name: "KVKK Aydınlatma Metni", href: "/kvkk" },
     { name: "Çerez Politikası", href: "/cookies" },
+    { name: "Ticari Elektronik İleti Onayı", href: "/electronic-consent" },
   ],
 };
 
@@ -74,9 +76,12 @@ export default function Footer() {
         {/* Links Section */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-12">
           <div className="lg:col-span-2">
-            <Link href="/" className="inline-block mb-6">
-              <span className="font-playfair text-2xl font-bold tracking-widest text-white uppercase">
+            <Link href="/" className="inline-block mb-6 group">
+              <span className="font-playfair text-2xl sm:text-3xl font-bold tracking-[0.18em] text-white uppercase block group-hover:text-[#a3b899] transition-colors">
                 {siteTitle}
+              </span>
+              <span className="text-[10px] uppercase tracking-[0.35em] text-[#a3b899] font-medium block mt-1">
+                Sessiz Özgüven
               </span>
             </Link>
             <p className="text-sm text-zinc-400 mb-6 leading-relaxed max-w-xs">
