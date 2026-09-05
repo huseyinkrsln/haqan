@@ -190,10 +190,10 @@ export default function ProductCard({
             </span>
           </div>
 
-          {/* Ürün İsmi */}
+          {/* Ürün İsmi (Koyu, Belirgin & Zarif Tipografi) */}
           <Link href={`/urun/${productSlug}`} className="block">
             <h3
-              className="text-xs sm:text-sm font-medium text-gray-900 line-clamp-1 hover:text-[#4A5D3E] transition-colors leading-snug"
+              className="text-xs sm:text-sm font-bold font-serif text-stone-950 line-clamp-1 hover:text-[#4A5D3E] transition-colors leading-snug tracking-tight"
               title={productName}
             >
               {productName}

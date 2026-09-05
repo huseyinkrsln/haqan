@@ -13,10 +13,11 @@ import {
   Search,
   X,
   Tag,
+  Loader2,
 } from "lucide-react";
 import { useCategories } from "@/hooks/useCategories";
 import { useProductGroups } from "@/hooks/useProductGroups";
-import { useProducts } from "@/hooks/useProducts";
+import { useProducts, useInfiniteProducts } from "@/hooks/useProducts";
 import { useBrands, useSizeGroupsWithSizesLookup } from "@/hooks/useFilters";
 import ProductCard from "@/components/product/ProductCard";
 import { Category, Product } from "@/types/api.types";
@@ -221,8 +222,14 @@ export default function CollectionClientView({
   const selectedBrand = brandsData?.find((b) => b.id === selectedBrandId);
   const selectedSize = availableSizes.find((s) => s.id === selectedSizeId);
 
-  // Ürünleri Çek
-  const { data: productsData, isLoading: isProductsLoading } = useProducts({
+  // 🌟 Ürünleri Sonsuz Kaydırmalı (Infinite Scroll) Çek 🌟
+  const {
+    data: productsInfiniteData,
+    isLoading: isProductsLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = useInfiniteProducts({
     categoryId: activeCategoryId,
     productGroupId: selectedProductGroupId,
     brandId: selectedBrandId,
@@ -232,10 +239,39 @@ export default function CollectionClientView({
     isNewArrival: effectiveIsNewArrival,
     orderBy: selectedSort.orderBy,
     isAscending: selectedSort.isAscending,
-    take: 50,
+    take: 16,
   });
 
-  const rawProducts = productsData?.data || initialProducts || [];
+  // Tüm sayfalardaki ürünleri birleştir
+  const rawProducts = useMemo(() => {
+    if (!productsInfiniteData?.pages) return initialProducts || [];
+    return productsInfiniteData.pages.flatMap((page: any) => {
+      if (Array.isArray(page)) return page;
+      if (Array.isArray(page?.data)) return page.data;
+      if (Array.isArray(page?.Data)) return page.Data;
+      return [];
+    });
+  }, [productsInfiniteData, initialProducts]);
+
+  // Sonsuz kaydırma için IntersectionObserver Sentinel
+  const observerTarget = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const target = observerTarget.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // 🌟 İSTEMCİDE ANLIK VE KESİN SIRALAMA GARANTİSİ 🌟
   const sortedProducts = useMemo(() => {
@@ -780,6 +816,22 @@ export default function CollectionClientView({
               />
             ))}
           </div>
+        )}
+
+        {/* Sonsuz Kaydırma Yükleniyor Göstergesi & Sentinel */}
+        {isFetchingNextPage && (
+          <div className="py-8 flex flex-col items-center justify-center gap-2 text-gray-500 text-xs">
+            <Loader2 className="w-6 h-6 animate-spin text-gray-900" />
+            <span>Daha fazla ürün yükleniyor...</span>
+          </div>
+        )}
+
+        <div ref={observerTarget} className="h-6" />
+
+        {!hasNextPage && sortedProducts.length > 0 && (
+          <p className="text-center text-xs text-gray-400 py-6 border-t border-gray-100 mt-6">
+            Tüm ürünler listelendi ({sortedProducts.length} ürün)
+          </p>
         )}
       </div>
     </div>

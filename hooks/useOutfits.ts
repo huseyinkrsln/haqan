@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { axiosInstance } from "@/lib/axios";
 
 export interface OutfitItemVariant {
@@ -55,6 +55,30 @@ export function useOutfits(gender?: string, onlyActive: boolean = true) {
   });
 }
 
+export function useInfiniteOutfits(params?: { take?: number; search?: string }) {
+  const take = params?.take || 8;
+  return useInfiniteQuery({
+    queryKey: ["outfits-showcase-infinite", params],
+    queryFn: async ({ pageParam = 1 }) => {
+      const res = await axiosInstance.get("/api/Outfits/showcase", {
+        params: {
+          page: pageParam,
+          take,
+          search: params?.search || undefined,
+        },
+      });
+      return res.data?.data || res.data;
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage: any) => {
+      if (!lastPage) return undefined;
+      const currentPage = lastPage.pageNumber || lastPage.PageNumber || 1;
+      const totalPages = lastPage.totalPages || lastPage.TotalPages || 1;
+      return currentPage < totalPages ? currentPage + 1 : undefined;
+    },
+  });
+}
+
 export function useOutfitBySlug(slug: string) {
   return useQuery<Outfit | null>({
     queryKey: ["outfit", slug],
@@ -66,3 +90,4 @@ export function useOutfitBySlug(slug: string) {
     enabled: !!slug,
   });
 }
+

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { axiosInstance } from "@/lib/axios";
 import {
   Product,
@@ -84,6 +84,60 @@ export function useProducts(params?: ProductQueryParams) {
         totalRecords: paginatedData?.totalRecords ?? list.length,
         totalPages: paginatedData?.totalPages || 1,
       };
+    },
+  });
+}
+
+export function useInfiniteProducts(params?: ProductQueryParams) {
+  const take = params?.take || 16;
+  return useInfiniteQuery({
+    queryKey: ["products-showcase-infinite", params],
+    queryFn: async ({ pageParam = 1 }) => {
+      const res = await axiosInstance.get("/api/products/showcase", {
+        params: {
+          page: pageParam,
+          take,
+          search: params?.search || undefined,
+          categoryId: params?.categoryId || undefined,
+          productGroupId: params?.productGroupId || undefined,
+          brandId: params?.brandId || undefined,
+          colorId: params?.colorId || undefined,
+          sizeId: params?.sizeId || undefined,
+          minPrice: params?.minPrice || undefined,
+          maxPrice: params?.maxPrice || undefined,
+          isFeatured: params?.isFeatured || undefined,
+          isBestSeller: params?.isBestSeller || undefined,
+          isNewArrival: params?.isNewArrival || undefined,
+          orderBy: params?.orderBy || undefined,
+          isAscending: params?.isAscending,
+        },
+      });
+
+      const raw = res.data;
+      const paginatedData = raw?.data || raw;
+
+      const list: Product[] = Array.isArray(paginatedData)
+        ? paginatedData
+        : Array.isArray(paginatedData?.data)
+        ? paginatedData.data
+        : Array.isArray(raw?.data?.data)
+        ? raw.data.data
+        : [];
+
+      return {
+        data: list,
+        pageNumber: paginatedData?.pageNumber || pageParam,
+        pageSize: paginatedData?.pageSize || take,
+        totalRecords: paginatedData?.totalRecords ?? list.length,
+        totalPages: paginatedData?.totalPages || 1,
+      };
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage: any) => {
+      if (!lastPage) return undefined;
+      const currentPage = lastPage.pageNumber || 1;
+      const totalPages = lastPage.totalPages || 1;
+      return currentPage < totalPages ? currentPage + 1 : undefined;
     },
   });
 }

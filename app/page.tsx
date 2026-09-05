@@ -13,7 +13,9 @@ import {
 } from "lucide-react";
 import ProductCard from "@/components/product/ProductCard";
 import HeroSlider from "@/components/home/HeroSlider";
+import FeaturedEditorialLookbook from "@/components/home/FeaturedEditorialLookbook";
 import { useCategories } from "@/hooks/useCategories";
+import { useOutfits } from "@/hooks/useOutfits";
 import {
   useProducts,
   useBestSellerProducts,
@@ -22,6 +24,7 @@ import {
 } from "@/hooks/useProducts";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { getMinioUrl } from "@/lib/utils";
+import { useMemo } from "react";
 
 export default function HomePage() {
   const { data: settings } = useSiteSettings();
@@ -37,6 +40,13 @@ export default function HomePage() {
 
   const { data: rootCategoriesData, isLoading: isCategoriesLoading } = useCategories(true);
   const { data: allCategoriesData } = useCategories(false);
+
+  // Sıralaması 0 olan (veya en üstteki aktif) Lookbook Kombini
+  const { data: outfitsData } = useOutfits(undefined, true);
+  const featuredOutfit = useMemo(() => {
+    if (!outfitsData || outfitsData.length === 0) return null;
+    return outfitsData.find((o) => o.displayOrder === 0) || outfitsData[0];
+  }, [outfitsData]);
 
   // Veritabanı sorguları
   const { data: bestSellersData, isLoading: isBestSellersLoading } = useBestSellerProducts(4);
@@ -114,6 +124,9 @@ export default function HomePage() {
           )}
         </div>
       </section>
+
+      {/* ─── 2. HAFTANIN LOOKBOOK EDİTORYAL KOMBİNİ (Sıralama: 0) ─── */}
+      {featuredOutfit && <FeaturedEditorialLookbook outfit={featuredOutfit} />}
 
       {/* ─── 3. ÖNE ÇIKANLAR VİTRİNİ ─── */}
       <section className="max-w-7xl mx-auto px-4 md:px-8 py-10 md:py-14">

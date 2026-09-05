@@ -133,16 +133,16 @@ export default function OutfitDetailModal({ outfit, onClose }: OutfitDetailModal
   const savings = (outfit.totalOriginalPrice || outfit.price) - outfit.price;
 
   return (
-    <div className="fixed inset-0 z-[100] overflow-hidden flex items-end md:items-stretch justify-end overscroll-contain">
+    <div className="fixed inset-0 z-[100] overflow-y-auto overflow-x-hidden flex items-end md:items-center justify-center p-0 md:p-4 lg:p-6 overscroll-contain">
       {/* Karartma Backdrop */}
       <div
         onClick={onClose}
         onTouchMove={(e) => e.preventDefault()}
-        className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-300"
+        className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity animate-in fade-in duration-300"
       />
 
-      {/* Responsive Sheet: Mobilde Bottom Sheet (aşağıdan yukarı), Masaüstünde Sağ Drawer */}
-      <div className="relative z-10 w-full md:max-w-3xl lg:max-w-4xl bg-white shadow-2xl flex flex-col h-[90vh] h-[90dvh] max-h-[90dvh] md:h-full md:max-h-none rounded-t-3xl md:rounded-none animate-in slide-in-from-bottom md:slide-in-from-right duration-300 overflow-hidden overscroll-contain">
+      {/* Centered Modal: Mobilde Bottom Sheet, Masaüstünde Merkez Pop-up Modal */}
+      <div className="relative z-10 w-full md:max-w-4xl lg:max-w-5xl bg-white shadow-2xl flex flex-col h-[90vh] h-[90dvh] max-h-[90dvh] md:h-[620px] md:max-h-[88vh] rounded-t-3xl md:rounded-3xl animate-in slide-in-from-bottom md:slide-in-from-none md:zoom-in-95 md:fade-in duration-200 overflow-hidden overscroll-contain border border-stone-200/80">
         
         {/* ─── MOBİL: Üst Sürükleme / Çekmece Çubuğu ─── */}
         <div className="pt-2 pb-1 flex justify-center md:hidden shrink-0 bg-white">

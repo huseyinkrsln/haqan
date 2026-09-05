@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -9,8 +9,9 @@ import {
   ShoppingBag,
   Eye,
   Heart,
+  Loader2,
 } from "lucide-react";
-import { useOutfits, Outfit } from "@/hooks/useOutfits";
+import { useInfiniteOutfits, Outfit } from "@/hooks/useOutfits";
 import { useWishlist } from "@/context/WishlistContext";
 import { getMinioUrl, formatPrice } from "@/lib/utils";
 import OutfitDetailModal from "@/components/outfit/OutfitDetailModal";
@@ -20,7 +21,51 @@ export default function StilKesfetPage() {
   const { toggleOutfit, isOutfitWishlisted } = useWishlist();
   const [activeOutfit, setActiveOutfit] = useState<Outfit | null>(null);
 
-  const { data: outfits, isLoading } = useOutfits(undefined, true);
+  // Sonsuz Kaydırmalı Kombin Sorgusu
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = useInfiniteOutfits({ take: 8 });
+
+  // Tüm sayfalardaki kombinleri birleştir
+  const outfits = useMemo(() => {
+    if (!data?.pages) return [];
+    return data.pages.flatMap((page: any) => {
+      if (Array.isArray(page)) return page;
+      if (Array.isArray(page?.data)) return page.data;
+      if (Array.isArray(page?.Data)) return page.Data;
+      return [];
+    });
+  }, [data]);
+
+  const totalOutfitsCount = useMemo(() => {
+    if (!data?.pages?.[0]) return outfits.length;
+    const firstPage: any = data.pages[0];
+    return firstPage?.totalRecords ?? firstPage?.TotalRecords ?? outfits.length;
+  }, [data, outfits.length]);
+
+  // Sonsuz kaydırma için Sentinel IntersectionObserver
+  const observerTarget = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const target = observerTarget.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // Sayfa yüklendiğinde veya hash değiştiğinde (#kombin-X) ilgili kombini otomatik aç
   useEffect(() => {
@@ -39,9 +84,7 @@ export default function StilKesfetPage() {
     setActiveOutfit(outfit);
   };
 
-  const filteredOutfits = useMemo(() => {
-    return outfits || [];
-  }, [outfits]);
+  const filteredOutfits = outfits;
 
   return (
     <div className="bg-[#FAF9F6]/40 min-h-screen pb-24 md:pb-10 w-full max-w-full text-slate-900">
@@ -170,8 +213,8 @@ export default function StilKesfetPage() {
                         </span>
                       </div>
 
-                      {/* Kombin Başlığı */}
-                      <h3 className="text-xs sm:text-sm font-medium text-gray-900 line-clamp-1 group-hover:text-[#4A5D3E] transition-colors leading-snug">
+                      {/* Kombin Başlığı (Koyu, Belirgin & Zarif Tipografi) */}
+                      <h3 className="text-xs sm:text-sm font-bold font-serif text-stone-950 line-clamp-1 group-hover:text-[#4A5D3E] transition-colors leading-snug tracking-tight">
                         {outfit.title}
                       </h3>
                     </div>
@@ -192,6 +235,22 @@ export default function StilKesfetPage() {
               );
             })}
           </div>
+        )}
+
+        {/* Sonsuz Kaydırma Yükleniyor Göstergesi & Sentinel */}
+        {isFetchingNextPage && (
+          <div className="py-8 flex flex-col items-center justify-center gap-2 text-stone-500 text-xs">
+            <Loader2 className="w-6 h-6 animate-spin text-[#4A5D3E]" />
+            <span>Daha fazla kombin yükleniyor...</span>
+          </div>
+        )}
+
+        <div ref={observerTarget} className="h-6" />
+
+        {!hasNextPage && outfits.length > 0 && (
+          <p className="text-center text-xs text-stone-400 py-6 border-t border-stone-200/60 mt-6">
+            Tüm kombinler listelendi ({outfits.length} kombin)
+          </p>
         )}
       </div>
 
