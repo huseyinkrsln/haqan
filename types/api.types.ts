@@ -14,6 +14,7 @@ export interface Category extends BaseEntity {
   description?: string;
   imageUrl1?: string;
   imageUrl2?: string;
+  icon?: string;
   parentCategoryId?: number;
   subCategories?: Category[];
   sizeGroupId?: number;

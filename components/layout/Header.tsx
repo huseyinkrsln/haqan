@@ -23,6 +23,7 @@ import { useWishlist } from "@/context/WishlistContext";
 import { useCategories } from "@/hooks/useCategories";
 import { useProducts } from "@/hooks/useProducts";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { useOutfits } from "@/hooks/useOutfits";
 import { getMinioUrl, formatPrice } from "@/lib/utils";
 
 export default function Header() {
@@ -41,6 +42,10 @@ export default function Header() {
   // Kategoriler
   const { data: rootCategories } = useCategories(true);
   const { data: allCategories } = useCategories(false);
+
+  // Kombinler (Stil Keşfet)
+  const { data: previewOutfits } = useOutfits(undefined, true);
+  const [isStilHovered, setIsStilHovered] = useState(false);
 
   const [activeHoverDeptId, setActiveHoverDeptId] = useState<number | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -227,17 +232,91 @@ export default function Header() {
               );
             })}
 
-            <Link
-              href="/favoriler"
-              className={`text-xs tracking-widest font-semibold transition-colors relative pb-0.5 ${
-                pathname === "/favoriler" ? "text-[#4A5D3E]" : "text-gray-600 hover:text-gray-900"
-              }`}
+            {/* ─── STİL KEŞFET (KOMBİNLER & LOOKBOOK) ─── */}
+            <div
+              className="relative py-5"
+              onMouseEnter={() => setIsStilHovered(true)}
+              onMouseLeave={() => setIsStilHovered(false)}
             >
-              FAVORİLER
-              {pathname === "/favoriler" && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#4A5D3E] rounded-full" />
+              <Link
+                href="/stil-kesfet"
+                className={`text-xs tracking-widest font-bold uppercase transition-colors flex items-center gap-1.5 pb-0.5 ${
+                  pathname === "/stil-kesfet"
+                    ? "text-[#4A5D3E]"
+                    : "text-gray-700 hover:text-gray-900"
+                }`}
+              >
+                <Sparkles size={13} className="text-amber-500" />
+                STİL KEŞFET
+                <ChevronDown
+                  size={12}
+                  className={`transition-transform duration-200 ${
+                    isStilHovered ? "rotate-180 text-[#4A5D3E]" : "text-gray-400"
+                  }`}
+                />
+                {pathname === "/stil-kesfet" && (
+                  <span className="absolute bottom-2 left-0 right-0 h-0.5 bg-[#4A5D3E] rounded-full" />
+                )}
+              </Link>
+
+              {/* Stil Keşfet Hover Preview Paneli */}
+              {isStilHovered && (
+                <div className="absolute top-full left-1/2 -translate-x-1/2 w-[540px] bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-100 p-5 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                    <div>
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-gray-900 flex items-center gap-1.5">
+                        <Sparkles size={14} className="text-amber-500" /> HAQAN ÖZEL KOMBİNLER
+                      </h4>
+                      <p className="text-[11px] text-gray-500 mt-0.5">
+                        Stilistlerin hazırladığı hazır kombin setleri
+                      </p>
+                    </div>
+                    <Link
+                      href="/stil-kesfet"
+                      onClick={() => setIsStilHovered(false)}
+                      className="text-xs font-bold text-[#4A5D3E] hover:underline flex items-center gap-1 shrink-0"
+                    >
+                      Tüm Kombinler <ArrowRight size={12} />
+                    </Link>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3 pt-3">
+                    {(previewOutfits || []).slice(0, 3).map((outfit) => (
+                      <Link
+                        key={outfit.id}
+                        href={`/stil-kesfet#kombin-${outfit.id}`}
+                        onClick={() => setIsStilHovered(false)}
+                        className="group block rounded-xl overflow-hidden bg-gray-50/80 border border-gray-100 hover:shadow-md transition-all p-2 text-center"
+                      >
+                        <div className="aspect-[3/4] rounded-lg overflow-hidden bg-gray-200 mb-2 relative">
+                          <img
+                            src={getMinioUrl(outfit.coverImageUrl)}
+                            alt={outfit.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                          {outfit.showDiscountBadge && outfit.discountValue && (
+                            <span className="absolute top-1.5 right-1.5 bg-rose-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-xs">
+                              %{outfit.discountValue}
+                            </span>
+                          )}
+                        </div>
+                        <h5 className="text-xs font-bold text-gray-900 group-hover:text-[#4A5D3E] transition-colors truncate">
+                          {outfit.title}
+                        </h5>
+                        <p className="text-[11px] font-bold text-[#4A5D3E] mt-0.5">
+                          {formatPrice(outfit.price)}
+                        </p>
+                      </Link>
+                    ))}
+                    {(!previewOutfits || previewOutfits.length === 0) && (
+                      <div className="col-span-3 py-6 text-center text-xs text-gray-400">
+                        Yeni sezon kombinleri hazırlanıyor...
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
-            </Link>
+            </div>
           </nav>
 
           {/* Aksiyonlar (Arama, Profil, Favori, Sepet) */}
@@ -389,11 +468,12 @@ export default function Header() {
             })}
 
             <Link
-              href="/favoriler"
+              href="/stil-kesfet"
               onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 text-sm font-semibold tracking-wider text-gray-800"
+              className="flex items-center gap-2 px-3 py-2 text-sm font-bold tracking-wider text-[#4A5D3E] bg-[#4A5D3E]/5 rounded-xl mx-2"
             >
-              FAVORİLER
+              <Sparkles size={16} className="text-amber-500" />
+              STİL KEŞFET (KOMBİNLER)
             </Link>
             <Link
               href={user ? "/profilim" : "/giris"}

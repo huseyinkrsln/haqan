@@ -132,6 +132,29 @@ export function useProductBySlug(slug: string) {
         }
       }
 
+      // 3. Barkod veya kod araması ile vitrinden ürünü yakala (Örn: Barkod ile girildiyse)
+      try {
+        const searchRes = await axiosInstance.get(`/api/products/showcase?search=${encodeURIComponent(slug)}&take=1`);
+        const searchRaw = searchRes.data;
+        const searchList = Array.isArray(searchRaw?.data)
+          ? searchRaw.data
+          : Array.isArray(searchRaw?.data?.data)
+          ? searchRaw.data.data
+          : Array.isArray(searchRaw)
+          ? searchRaw
+          : [];
+        if (searchList.length > 0 && searchList[0]?.id) {
+          const fullRes = await axiosInstance.get(`/api/products/getbyid?id=${searchList[0].id}`);
+          const fullRaw = fullRes.data;
+          const fullProduct = fullRaw?.data || fullRaw;
+          if (fullProduct && fullProduct.id) {
+            return fullProduct;
+          }
+        }
+      } catch {
+        // Fallback da bulamadıysa null dön
+      }
+
       return null;
     },
     enabled: Boolean(slug),

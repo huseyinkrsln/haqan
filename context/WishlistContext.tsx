@@ -10,18 +10,27 @@ import React, {
 } from "react";
 import { useSession } from "next-auth/react";
 import { Product } from "@/types/api.types";
+import { Outfit } from "@/hooks/useOutfits";
 import { axiosInstance } from "@/lib/axios";
 import AuthPromptModal from "@/components/auth/AuthPromptModal";
 
 const STORAGE_KEY = "haqan_user_wishlist";
+const STORAGE_KEY_OUTFITS = "haqan_user_wishlist_outfits";
 
 interface WishlistContextValue {
   items: Product[];
+  outfits: Outfit[];
   addItem: (product: Product) => boolean;
   removeItem: (id: string | number) => void;
   isWishlisted: (id: string | number) => boolean;
   toggleItem: (product: Product) => boolean;
+  addOutfit: (outfit: Outfit) => boolean;
+  removeOutfit: (outfitId: number) => void;
+  isOutfitWishlisted: (outfitId: number) => boolean;
+  toggleOutfit: (outfit: Outfit) => boolean;
   totalItems: number;
+  totalProducts: number;
+  totalOutfits: number;
   openAuthModal: () => void;
 }
 
@@ -30,6 +39,7 @@ const WishlistContext = createContext<WishlistContextValue | null>(null);
 export function WishlistProvider({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession();
   const [items, setItems] = useState<Product[]>([]);
+  const [outfits, setOutfits] = useState<Outfit[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
@@ -81,11 +91,19 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
   // 🌟 1. İLK AÇILIŞTA LOCALSTORAGE'DAN ANINDA YÜKLE (0ms) 🌟
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
+      const savedProducts = localStorage.getItem(STORAGE_KEY);
+      if (savedProducts) {
+        const parsed = JSON.parse(savedProducts);
         if (Array.isArray(parsed) && parsed.length > 0) {
           setItems(parsed);
+        }
+      }
+
+      const savedOutfits = localStorage.getItem(STORAGE_KEY_OUTFITS);
+      if (savedOutfits) {
+        const parsed = JSON.parse(savedOutfits);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setOutfits(parsed);
         }
       }
     } catch (e) {
@@ -99,8 +117,10 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (status === "unauthenticated") {
       setItems([]);
+      setOutfits([]);
       try {
         localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(STORAGE_KEY_OUTFITS);
       } catch {}
     }
   }, [status]);
@@ -115,6 +135,15 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     }
   }, [items, isLoaded, isAuthenticated]);
 
+  useEffect(() => {
+    if (!isLoaded || !isAuthenticated) return;
+    try {
+      localStorage.setItem(STORAGE_KEY_OUTFITS, JSON.stringify(outfits));
+    } catch (e) {
+      console.warn("LocalStorage kaydedilemedi:", e);
+    }
+  }, [outfits, isLoaded, isAuthenticated]);
+
   // 🌟 4. KULLANICI GİRİŞ YAPTIĞINDA BACKEND'DEN (PostgreSQL) ÇEK & SENKRONİZE ET 🌟
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -122,6 +151,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     let isMounted = true;
 
     async function syncFromBackend() {
+      // 4.1. Ürün Favorilerini Çek
       try {
         const res = await axiosInstance.get(`/api/ProductFavorites/my-favorites`);
         const serverData = res.data;
@@ -161,7 +191,22 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
           setItems(Array.from(map.values()));
         }
       } catch (err) {
-        console.warn("Favoriler backend'den çekilemedi:", err);
+        console.warn("Ürün favorileri backend'den çekilemedi:", err);
+      }
+
+      // 4.2. Kombin Favorilerini Çek
+      try {
+        const outfitRes = await axiosInstance.get(`/api/OutfitFavorites/my-favorites`);
+        const outfitData = outfitRes.data;
+        const serverOutfits: Outfit[] = Array.isArray(outfitData)
+          ? outfitData
+          : outfitData?.data || [];
+
+        if (isMounted && Array.isArray(serverOutfits)) {
+          setOutfits(serverOutfits);
+        }
+      } catch (err) {
+        console.warn("Kombin favorileri backend'den çekilemedi:", err);
       }
     }
 
@@ -172,7 +217,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     };
   }, [isAuthenticated]);
 
-  // 🌟 4. FAVORİLERE EKLEME (Optimistic UI + Backend PostgreSQL Kaydı) 🌟
+  // 🌟 5. ÜRÜN FAVORİLERİNE EKLEME & ÇIKARMA 🌟
   const addItem = useCallback(
     (product: Product): boolean => {
       if (!isAuthenticated) {
@@ -182,31 +227,23 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
 
       const prodId = String(product.id);
 
-      // Anında UI güncellemesi (0ms)
       setItems((prev) => {
         if (prev.some((i) => String(i.id) === prodId)) return prev;
         return [product, ...prev];
       });
 
-      // Arka planda PostgreSQL'e POST /api/ProductFavorites at
       const uid = getNumericUserId();
       const numProdId = Number(product.id);
 
       if (uid && numProdId) {
-        console.log("👉 Favori DB'ye kaydediliyor... UserId:", uid, "ProductId:", numProdId);
         axiosInstance
           .post("/api/ProductFavorites", {
             userId: uid,
             productId: numProdId,
           })
-          .then((res) => {
-            console.log("✅ Favori PostgreSQL DB'ye kaydedildi:", res.data);
-          })
           .catch((err) => {
             console.error("❌ Favori DB kayıt hatası:", err.response?.data || err.message);
           });
-      } else {
-        console.warn("⚠️ UserId veya ProductId bulunamadı:", { uid, numProdId });
       }
 
       return true;
@@ -214,29 +251,21 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     [isAuthenticated, getNumericUserId]
   );
 
-  // 🌟 5. FAVORİLERDEN ÇIKARMA (Optimistic UI + Backend PostgreSQL Silme) 🌟
   const removeItem = useCallback(
     (id: string | number) => {
       const prodId = String(id);
-
-      // Anında UI'dan çıkar (0ms)
       setItems((prev) => prev.filter((i) => String(i.id) !== prodId));
 
-      // Arka planda PostgreSQL'den DELETE /api/ProductFavorites at
       const uid = getNumericUserId();
       const numProdId = Number(id);
 
       if (uid && numProdId) {
-        console.log("👉 Favori DB'den siliniyor... UserId:", uid, "ProductId:", numProdId);
         axiosInstance
           .delete("/api/ProductFavorites", {
             data: {
               userId: uid,
               productId: numProdId,
             },
-          })
-          .then(() => {
-            console.log("✅ Favori PostgreSQL DB'den silindi");
           })
           .catch((err) => {
             console.error("❌ Favori DB silme hatası:", err.response?.data || err.message);
@@ -268,15 +297,105 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     [isAuthenticated, isWishlisted, removeItem, addItem]
   );
 
+  // 🌟 6. KOMBİN FAVORİLERİNE EKLEME & ÇIKARMA 🌟
+  const addOutfit = useCallback(
+    (outfit: Outfit): boolean => {
+      if (!isAuthenticated) {
+        setAuthModalOpen(true);
+        return false;
+      }
+
+      setOutfits((prev) => {
+        if (prev.some((o) => o.id === outfit.id)) return prev;
+        return [outfit, ...prev];
+      });
+
+      const uid = getNumericUserId();
+      if (uid && outfit.id) {
+        axiosInstance
+          .post("/api/OutfitFavorites", {
+            userId: uid,
+            outfitId: outfit.id,
+          })
+          .then(() => {
+            console.log("✅ Kombin favorilere kaydedildi:", outfit.id);
+          })
+          .catch((err) => {
+            console.error("❌ Kombin favori kayıt hatası:", err.response?.data || err.message);
+          });
+      }
+
+      return true;
+    },
+    [isAuthenticated, getNumericUserId]
+  );
+
+  const removeOutfit = useCallback(
+    (outfitId: number) => {
+      setOutfits((prev) => prev.filter((o) => o.id !== outfitId));
+
+      const uid = getNumericUserId();
+      if (uid && outfitId) {
+        axiosInstance
+          .delete("/api/OutfitFavorites", {
+            data: {
+              userId: uid,
+              outfitId: outfitId,
+            },
+          })
+          .then(() => {
+            console.log("✅ Kombin favorilerden silindi:", outfitId);
+          })
+          .catch((err) => {
+            console.error("❌ Kombin favori silme hatası:", err.response?.data || err.message);
+          });
+      }
+    },
+    [getNumericUserId]
+  );
+
+  const isOutfitWishlisted = useCallback(
+    (outfitId: number) => outfits.some((o) => o.id === outfitId),
+    [outfits]
+  );
+
+  const toggleOutfit = useCallback(
+    (outfit: Outfit): boolean => {
+      if (!isAuthenticated) {
+        setAuthModalOpen(true);
+        return false;
+      }
+
+      if (isOutfitWishlisted(outfit.id)) {
+        removeOutfit(outfit.id);
+      } else {
+        addOutfit(outfit);
+      }
+      return true;
+    },
+    [isAuthenticated, isOutfitWishlisted, removeOutfit, addOutfit]
+  );
+
+  const totalProducts = items.length;
+  const totalOutfits = outfits.length;
+  const totalItems = totalProducts + totalOutfits;
+
   return (
     <WishlistContext.Provider
       value={{
         items,
+        outfits,
         addItem,
         removeItem,
         isWishlisted,
         toggleItem,
-        totalItems: items.length,
+        addOutfit,
+        removeOutfit,
+        isOutfitWishlisted,
+        toggleOutfit,
+        totalItems,
+        totalProducts,
+        totalOutfits,
         openAuthModal: () => setAuthModalOpen(true),
       }}
     >
@@ -286,7 +405,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
         title="Favorilere Eklemek İçin Giriş Yapın"
-        description="Beğendiğiniz tasarımları favorilerinize eklemek ve size özel listeler oluşturmak için lütfen üye girişi yapınız."
+        description="Beğendiğiniz ürün ve kombinleri favorilerinize eklemek ve size özel listeler oluşturmak için lütfen üye girişi yapınız."
       />
     </WishlistContext.Provider>
   );

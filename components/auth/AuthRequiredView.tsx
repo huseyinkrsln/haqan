@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { User, Heart, Lock, ArrowRight, ShieldCheck, UserPlus, LogIn } from "lucide-react";
+import { User, Heart, Lock, ShoppingBag, ArrowRight, ShieldCheck, UserPlus, LogIn } from "lucide-react";
 
 interface AuthRequiredViewProps {
   title: string;
   description: string;
   callbackUrl?: string;
-  iconType?: "user" | "heart" | "order";
+  iconType?: "user" | "heart" | "order" | "cart";
 }
 
 export default function AuthRequiredView({
@@ -32,6 +32,8 @@ export default function AuthRequiredView({
               <Heart size={36} className="fill-[#4A5D3E]/20" />
             ) : iconType === "order" ? (
               <Lock size={34} />
+            ) : iconType === "cart" ? (
+              <ShoppingBag size={34} />
             ) : (
               <User size={36} />
             )}

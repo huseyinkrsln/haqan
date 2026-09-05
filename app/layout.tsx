@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display, Geist } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
@@ -30,6 +30,10 @@ const playfair = Playfair_Display({
   display: "swap",
   variable: "--font-playfair",
 });
+
+export const viewport: Viewport = {
+  themeColor: "#09090b",
+};
 
 export async function generateMetadata(): Promise<Metadata> {
   try {
@@ -77,7 +81,6 @@ export async function generateMetadata(): Promise<Metadata> {
       description: metaDescription,
       keywords: keywords,
       manifest: "/manifest.json",
-      themeColor: "#09090b",
       appleWebApp: {
         capable: true,
         statusBarStyle: "black-translucent",
@@ -111,7 +114,6 @@ export async function generateMetadata(): Promise<Metadata> {
       description:
         "Zamansız tasarımlar ve premium kumaşlarla giyimde yeni standartlar. Takım elbise, gömlek, elbise, pantolon, ayakkabı ve aksesuar.",
       manifest: "/manifest.json",
-      themeColor: "#09090b",
       appleWebApp: {
         capable: true,
         statusBarStyle: "black-translucent",

@@ -18,8 +18,14 @@ const STORAGE_KEY = "haqan_user_cart";
 
 export interface CartItem {
   id: string | number;
+  productId?: number;
   cartItemId?: number;
   variantId?: number;
+  outfitId?: number;
+  outfitTitle?: string;
+  outfitCoverImageUrl?: string;
+  outfitPrice?: number;
+  originalPrice?: number;
   name: string;
   price: number;
   image: string;
@@ -27,11 +33,13 @@ export interface CartItem {
   color: string;
   quantity: number;
   slug: string;
+  availableVariants?: { id: number; sizeName: string; stockQuantity: number }[];
 }
 
 interface CartContextValue {
   items: CartItem[];
   addItem: (item: CartItem) => boolean;
+  addMultipleItems: (items: CartItem[]) => boolean;
   removeItem: (id: string | number, size: string, color: string) => void;
   updateQuantity: (
     id: string | number,
@@ -41,6 +49,13 @@ interface CartContextValue {
   ) => void;
   increaseQuantity: (id: string | number, size: string, color: string) => void;
   decreaseQuantity: (id: string | number, size: string, color: string) => void;
+  updateOutfitQuantity: (outfitId: number, quantity: number) => void;
+  removeOutfit: (outfitId: number) => void;
+  updateItemVariant: (
+    cartItemIdOrId: number | string,
+    variantId: number,
+    sizeName: string
+  ) => void;
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
@@ -192,6 +207,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           if (dbItems.length > 0) {
             const mappedItems: CartItem[] = dbItems.map((di) => ({
               id: String(di.productId || di.productVariantId),
+              productId: di.productId,
               cartItemId: di.id,
               variantId: di.productVariantId,
               name: di.productName || "Ürün",
@@ -200,7 +216,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
               size: di.sizeName || "Standart",
               color: di.colorName || "Standart",
               quantity: Number(di.quantity) || 1,
-              slug: di.productCode || di.sku || String(di.productId || di.productVariantId),
+              slug: di.productSlug || (di.productId ? String(di.productId) : (di.productCode || di.sku || String(di.productVariantId))),
+              outfitId: di.outfitId || undefined,
+              outfitTitle: di.outfitTitle || undefined,
+              outfitCoverImageUrl: di.outfitCoverImageUrl ? getMinioUrl(di.outfitCoverImageUrl) : undefined,
+              outfitPrice: di.outfitPrice ? Number(di.outfitPrice) : undefined,
             }));
 
             setItems(mappedItems);
@@ -275,6 +295,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
               cartId,
               productVariantId: variantId,
               quantity: item.quantity,
+              outfitId: item.outfitId || null,
             });
             const createdCartItemId = res.data?.data?.id || res.data?.id;
             if (createdCartItemId) {
@@ -289,6 +310,69 @@ export function CartProvider({ children }: { children: ReactNode }) {
             console.log("🛒 [DB Sync] Sepet ürünü PostgreSQL'e kaydedildi:", res.data);
           } catch (e) {
             console.warn("Sepet DB sync hatası:", e);
+          }
+        });
+      }
+
+      return true;
+    },
+    [isAuthenticated, currentUserId, ensureBackendCart]
+  );
+
+  // 🌟 7.2. TOPLU ÜRÜN EKLEME (KOMBİN / LOOKBOOK İÇİN) 🌟
+  const addMultipleItems = useCallback(
+    (newItems: CartItem[]) => {
+      if (!isAuthenticated) {
+        setAuthModalOpen(true);
+        return false;
+      }
+
+      if (!newItems || newItems.length === 0) return false;
+
+      setItems((prev) => {
+        let current = [...prev];
+        for (const item of newItems) {
+          const key = `${item.id}-${item.size}-${item.color}`;
+          const existingIndex = current.findIndex(
+            (i) => `${i.id}-${i.size}-${i.color}` === key
+          );
+          if (existingIndex > -1) {
+            current[existingIndex] = {
+              ...current[existingIndex],
+              quantity: current[existingIndex].quantity + item.quantity,
+            };
+          } else {
+            current.push(item);
+          }
+        }
+        return current;
+      });
+
+      if (currentUserId) {
+        ensureBackendCart(currentUserId).then(async (cartId) => {
+          if (!cartId) return;
+          for (const item of newItems) {
+            try {
+              const variantId = Number(item.variantId || item.id);
+              const res = await axiosInstance.post("/api/CartItems", {
+                cartId,
+                productVariantId: variantId,
+                quantity: item.quantity,
+                outfitId: item.outfitId || null,
+              });
+              const createdCartItemId = res.data?.data?.id || res.data?.id;
+              if (createdCartItemId) {
+                setItems((prev) =>
+                  prev.map((i) =>
+                    `${i.id}-${i.size}-${i.color}` === `${item.id}-${item.size}-${item.color}`
+                      ? { ...i, cartItemId: createdCartItemId }
+                      : i
+                  )
+                );
+              }
+            } catch (e) {
+              console.warn("Kombin ürünü DB sync hatası:", e);
+            }
           }
         });
       }
@@ -420,6 +504,105 @@ export function CartProvider({ children }: { children: ReactNode }) {
     [updateQuantity]
   );
 
+  // 🌟 10.2. KOMBİN ADET VE SİLME YÖNETİMİ 🌟
+  const removeOutfit = useCallback(
+    (outfitId: number) => {
+      setItems((prev) => prev.filter((i) => i.outfitId !== outfitId));
+
+      if (currentUserId) {
+        ensureBackendCart(currentUserId).then(async (cartId) => {
+          if (!cartId) return;
+          try {
+            await axiosInstance.delete("/api/CartItems/delete-outfit", {
+              data: { cartId, outfitId },
+            });
+            console.log("🛒 [DB Sync] Kombin sepetten silindi:", outfitId);
+          } catch (e) {
+            console.warn("Kombin sepetten silinemedi:", e);
+          }
+        });
+      }
+    },
+    [currentUserId, ensureBackendCart]
+  );
+
+  const updateOutfitQuantity = useCallback(
+    (outfitId: number, quantity: number) => {
+      if (quantity <= 0) {
+        removeOutfit(outfitId);
+        return;
+      }
+
+      setItems((prev) =>
+        prev.map((i) => (i.outfitId === outfitId ? { ...i, quantity } : i))
+      );
+
+      if (currentUserId) {
+        ensureBackendCart(currentUserId).then(async (cartId) => {
+          if (!cartId) return;
+          try {
+            await axiosInstance.put("/api/CartItems/update-outfit-quantity", {
+              cartId,
+              outfitId,
+              quantity,
+            });
+            console.log("🛒 [DB Sync] Kombin adedi güncellendi:", { outfitId, quantity });
+          } catch (e) {
+            console.warn("Kombin adedi güncellenemedi:", e);
+          }
+        });
+      }
+    },
+    [currentUserId, ensureBackendCart, removeOutfit]
+  );
+
+  const updateItemVariant = useCallback(
+    (cartItemIdOrId: number | string, variantId: number, sizeName: string) => {
+      let targetCartItemId: number | undefined;
+
+      setItems((prev) =>
+        prev.map((i) => {
+          if (
+            i.cartItemId === cartItemIdOrId ||
+            i.id === cartItemIdOrId ||
+            i.variantId === cartItemIdOrId
+          ) {
+            targetCartItemId = i.cartItemId;
+            return { ...i, variantId, size: sizeName };
+          }
+          return i;
+        })
+      );
+
+      if (currentUserId) {
+        ensureBackendCart(currentUserId).then(async (cartId) => {
+          if (!cartId) return;
+          try {
+            if (targetCartItemId) {
+              const target = itemsRef.current.find(
+                (i) => i.cartItemId === targetCartItemId
+              );
+              await axiosInstance.put("/api/CartItems", {
+                id: targetCartItemId,
+                cartId,
+                productVariantId: variantId,
+                quantity: target?.quantity || 1,
+              });
+              console.log("⚡ [DB Sync] Ürün bedeni güncellendi:", {
+                cartItemId: targetCartItemId,
+                variantId,
+                sizeName,
+              });
+            }
+          } catch (e) {
+            console.warn("Beden güncellenemedi:", e);
+          }
+        });
+      }
+    },
+    [currentUserId, ensureBackendCart]
+  );
+
   // 🌟 11. SEPETİ TEMİZLE 🌟
   const clearCart = useCallback(() => {
     setItems([]);
@@ -451,10 +634,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
       value={{
         items,
         addItem,
+        addMultipleItems,
         removeItem,
         updateQuantity,
         increaseQuantity,
         decreaseQuantity,
+        updateOutfitQuantity,
+        removeOutfit,
+        updateItemVariant,
         clearCart,
         totalItems,
         totalPrice,

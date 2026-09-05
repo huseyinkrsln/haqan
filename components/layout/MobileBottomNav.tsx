@@ -1,70 +1,144 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Shirt, Heart, User } from "lucide-react";
-import { useWishlist } from "@/context/WishlistContext";
+import {
+  Home,
+  Shirt,
+  User,
+  Sparkles,
+  Tag,
+  Layers,
+  ShoppingBag,
+  Footprints,
+  Flame,
+  Crown,
+  Watch,
+  Glasses,
+  Compass,
+  Heart,
+} from "lucide-react";
+import { useCategories } from "@/hooks/useCategories";
 
-// Şık ve Modern Etek / Elbise İkonu (Kadın Kategorisi İçin)
-function SkirtIcon({ size = 19, className }: { size?: number; className?: string }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d="M8 4h8l1 2.5H7L8 4z" />
-      <path d="M7 6.5L3.5 19.5c0 .5.5 1 1 1h15c.5 0 1-.5 1-1L17 6.5" />
-      <path d="M9.5 6.5v14" />
-      <path d="M14.5 6.5v14" />
-    </svg>
-  );
+const ICON_MAP: Record<string, any> = {
+  Layers,
+  Shirt,
+  Footprints,
+  ShoppingBag,
+  Sparkles,
+  Flame,
+  Tag,
+  Crown,
+  Watch,
+  Glasses,
+  Compass,
+  Heart,
+};
+
+function getCategoryIcon(name: string, slug: string) {
+  const lower = (name + " " + slug).toLowerCase();
+  if (lower.includes("koleksiyon") || lower.includes("collection") || lower.includes("all")) {
+    return Layers;
+  }
+  if (lower.includes("ayakkabi") || lower.includes("shoe") || lower.includes("sneaker") || lower.includes("bot")) {
+    return Footprints;
+  }
+  if (lower.includes("aksesuar") || lower.includes("canta") || lower.includes("bag") || lower.includes("cuzdan") || lower.includes("taki")) {
+    return ShoppingBag;
+  }
+  if (lower.includes("yeni") || lower.includes("trend") || lower.includes("sezon") || lower.includes("stil")) {
+    return Sparkles;
+  }
+  if (lower.includes("giyim") || lower.includes("shirt") || lower.includes("tekstil") || lower.includes("elbise") || lower.includes("pantolon") || lower.includes("ceket") || lower.includes("takim")) {
+    return Shirt;
+  }
+  return Tag;
 }
-
-const navItems = [
-  { href: "/", label: "ANA SAYFA", icon: Home },
-  { href: "/koleksiyon/erkek-giyim", label: "ERKEK", icon: Shirt },
-  { href: "/koleksiyon/kadin-giyim", label: "KADIN", icon: SkirtIcon },
-  { href: "/favoriler", label: "FAVORİLER", icon: Heart },
-  { href: "/profilim", label: "PROFİLİM", icon: User },
-];
 
 export default function MobileBottomNav() {
   const pathname = usePathname();
-  const { totalItems: wishlistCount } = useWishlist();
+  
+  // Ana kategorileri veritabanından dinamik olarak çek
+  const { data: rootCategories } = useCategories(true);
+
+  // Dinamik ana kategoriler (Sadece veritabanından gelenler)
+  const dynamicCategoryItems = useMemo(() => {
+    if (!rootCategories || rootCategories.length === 0) {
+      return [];
+    }
+
+    // Mobilde sığması için en fazla 2 ana kategori göster
+    return rootCategories.slice(0, 2).map((cat) => {
+      // Panelden seçilen ikon varsa onu al, yoksa akıllı varsayılana düş
+      const ChosenIcon =
+        cat.icon && ICON_MAP[cat.icon]
+          ? ICON_MAP[cat.icon]
+          : getCategoryIcon(cat.name, cat.slug);
+
+      return {
+        href: `/koleksiyon/${cat.slug}`,
+        label: cat.name.toUpperCase(),
+        icon: ChosenIcon,
+      };
+    });
+  }, [rootCategories]);
+
+  // Statik tek öğeler: ANA SAYFA, STİLLER, PROFİLİM. Aradaki kategoriler %100 dinamiktir.
+  const navItems = [
+    { href: "/", label: "ANA SAYFA", icon: Home },
+    ...dynamicCategoryItems,
+    { href: "/stil-kesfet", label: "STİLLER", icon: Sparkles },
+    { href: "/profilim", label: "PROFİLİM", icon: User },
+  ];
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-t border-gray-200/80 safe-area-pb shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
-      <div className="grid grid-cols-5 h-15">
+      <div className="flex items-center justify-around h-15 w-full px-1">
         {navItems.map(({ href, label, icon: Icon }) => {
           const isActive =
             href === "/"
               ? pathname === "/"
-              : pathname.startsWith(href) || (href.includes("erkek") && pathname.includes("erkek")) || (href.includes("kadin") && pathname.includes("kadin"));
+              : pathname === href || (href !== "/" && pathname.startsWith(href));
+
+          const isStil = href === "/stil-kesfet";
 
           return (
             <Link
               key={href}
               href={href}
-              className={`flex flex-col items-center justify-center gap-1 transition-colors relative ${
-                isActive ? "text-[#4A5D3E] font-bold" : "text-gray-400 hover:text-gray-600 font-medium"
+              className={`flex-1 min-w-0 flex flex-col items-center justify-center gap-1 transition-colors relative py-1 ${
+                isActive
+                  ? "text-[#4A5D3E] font-bold"
+                  : isStil
+                  ? "text-stone-700 font-medium"
+                  : "text-gray-400 hover:text-gray-600 font-medium"
               }`}
             >
-              <div className="relative">
-                <Icon size={19} className={isActive ? "stroke-[2.3]" : "stroke-[1.8]"} />
-                {label === "FAVORİLER" && wishlistCount > 0 && (
-                  <span className="absolute -top-1 -right-2 bg-[#4A5D3E] text-white text-[8px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">
-                    {wishlistCount}
-                  </span>
-                )}
+              <div className="relative flex items-center justify-center">
+                <Icon
+                  size={19}
+                  className={
+                    isActive
+                      ? "stroke-[2.3] text-[#4A5D3E]"
+                      : isStil
+                      ? "stroke-[1.9] text-amber-500"
+                      : "stroke-[1.8]"
+                  }
+                />
               </div>
-              <span className="text-[9px] tracking-wider uppercase">{label}</span>
+              <span
+                className={`text-[8.5px] sm:text-[9px] tracking-tight uppercase text-center px-0.5 truncate max-w-full ${
+                  isActive
+                    ? "font-bold text-[#4A5D3E]"
+                    : isStil
+                    ? "text-stone-800 font-semibold"
+                    : "text-gray-500"
+                }`}
+                title={label}
+              >
+                {label}
+              </span>
               {isActive && (
                 <span className="absolute top-0 w-8 h-0.5 bg-[#4A5D3E] rounded-full" />
               )}

@@ -13,8 +13,8 @@ const footerLinks = {
     { name: "İletişim & Konum", href: "/contact" },
   ],
   support: [
-    { name: "Sıkça Sorulan Sorular", href: "/faq" },
-    { name: "Kargo ve Teslimat", href: "/shipping" },
+    // { name: "Sıkça Sorulan Sorular", href: "/faq" },
+    // { name: "Kargo ve Teslimat", href: "/shipping" },
     { name: "İptal, İade ve Değişim", href: "/returns" },
     { name: "Sipariş Takibi", href: "/track-order" },
   ],
