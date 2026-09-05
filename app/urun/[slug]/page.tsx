@@ -125,7 +125,8 @@ export default function ProductPage({ params }: PageProps) {
             onColorChange={(cId) => setSelectedColorId(cId)}
           />
 
-          {/* Rozetler ve Güvenceler */}
+          {/* Rozetler ve Güvenceler (Şimdilik gizlendi) */}
+          {/*
           <div className="grid grid-cols-2 gap-3 pt-4 border-t border-gray-100">
             <div className="flex items-center gap-2.5 p-3 rounded-xl bg-gray-50/80 border border-gray-100">
               <Truck size={18} className="text-[#4A5D3E] shrink-0" />
@@ -156,6 +157,7 @@ export default function ProductPage({ params }: PageProps) {
               </div>
             </div>
           </div>
+          */}
 
           {/* Açıklama */}
           {product.description && (
